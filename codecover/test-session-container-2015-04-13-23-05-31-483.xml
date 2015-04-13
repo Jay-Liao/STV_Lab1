@@ -1,0 +1,3877 @@
+<?xml version="1.0" encoding="UTF-8"?><TestSessionContainer xmlns="http://www.codecover.org/xml/testsession-container" Date="1428937531470" TestSessionContainerId="15eb357c-b133-47ea-80c1-b3ac1ff9c5ec" version="1.0">
+<SrcFileList>
+<SrcFile Content="/* ===========================================================&#13;&#10; * JFreeChart : a free chart library for the Java(tm) platform&#13;&#10; * ===========================================================&#13;&#10; *&#13;&#10; * (C) Copyright 2000-2013, by Object Refinery Limited and Contributors.&#13;&#10; *&#13;&#10; * Project Info:  http://www.jfree.org/jfreechart/index.html&#13;&#10; *&#13;&#10; * This library is free software; you can redistribute it and/or modify it&#13;&#10; * under the terms of the GNU Lesser General Public License as published by&#13;&#10; * the Free Software Foundation; either version 2.1 of the License, or&#13;&#10; * (at your option) any later version.&#13;&#10; *&#13;&#10; * This library is distributed in the hope that it will be useful, but&#13;&#10; * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY&#13;&#10; * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public&#13;&#10; * License for more details.&#13;&#10; *&#13;&#10; * You should have received a copy of the GNU Lesser General Public&#13;&#10; * License along with this library; if not, write to the Free Software&#13;&#10; * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,&#13;&#10; * USA.&#13;&#10; *&#13;&#10; * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. &#13;&#10; * Other names may be trademarks of their respective owners.]&#13;&#10; *&#13;&#10; * --------&#13;&#10; * CSV.java&#13;&#10; * --------&#13;&#10; * (C) Copyright 2003-2008, by Object Refinery Limited.&#13;&#10; *&#13;&#10; * Original Author:  David Gilbert (for Object Refinery Limited);&#13;&#10; * Contributor(s):   -;&#13;&#10; *&#13;&#10; * Changes&#13;&#10; * -------&#13;&#10; * 24-Nov-2003 : Version 1 (DG);&#13;&#10; *&#13;&#10; */&#13;&#10;&#13;&#10;package org.jfree.data.io;&#13;&#10;&#13;&#10;import java.io.BufferedReader;&#13;&#10;import java.io.IOException;&#13;&#10;import java.io.Reader;&#13;&#10;import java.util.List;&#13;&#10;&#13;&#10;import org.jfree.data.category.CategoryDataset;&#13;&#10;import org.jfree.data.category.DefaultCategoryDataset;&#13;&#10;&#13;&#10;/**&#13;&#10; * A utility class for reading {@link CategoryDataset} data from a CSV file.&#13;&#10; * This initial version is very basic, and won't handle errors in the data&#13;&#10; * file very gracefully.&#13;&#10; */&#13;&#10;public class CSV {&#13;&#10;&#13;&#10;    /** The field delimiter. */&#13;&#10;    private char fieldDelimiter;&#13;&#10;&#13;&#10;    /** The text delimiter. */&#13;&#10;    private char textDelimiter;&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Creates a new CSV reader where the field delimiter is a comma, and the&#13;&#10;     * text delimiter is a double-quote.&#13;&#10;     */&#13;&#10;    public CSV() {&#13;&#10;        this(',', '&quot;');&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Creates a new reader with the specified field and text delimiters.&#13;&#10;     *&#13;&#10;     * @param fieldDelimiter  the field delimiter (usually a comma, semi-colon,&#13;&#10;     *                        colon, tab or space).&#13;&#10;     * @param textDelimiter  the text delimiter (usually a single or double&#13;&#10;     *                       quote).&#13;&#10;     */&#13;&#10;    public CSV(char fieldDelimiter, char textDelimiter) {&#13;&#10;        this.fieldDelimiter = fieldDelimiter;&#13;&#10;        this.textDelimiter = textDelimiter;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Reads a {@link CategoryDataset} from a CSV file or input source.&#13;&#10;     *&#13;&#10;     * @param in  the input source.&#13;&#10;     *&#13;&#10;     * @return A category dataset.&#13;&#10;     *&#13;&#10;     * @throws IOException if there is an I/O problem.&#13;&#10;     */&#13;&#10;    public CategoryDataset readCategoryDataset(Reader in) throws IOException {&#13;&#10;&#13;&#10;        DefaultCategoryDataset dataset = new DefaultCategoryDataset();&#13;&#10;        BufferedReader reader = new BufferedReader(in);&#13;&#10;        List columnKeys = null;&#13;&#10;        int lineIndex = 0;&#13;&#10;        String line = reader.readLine();&#13;&#10;        while (line != null) {&#13;&#10;            if (lineIndex == 0) {  // first line contains column keys&#13;&#10;                columnKeys = extractColumnKeys(line);&#13;&#10;            }&#13;&#10;            else {  // remaining lines contain a row key and data values&#13;&#10;                extractRowKeyAndData(line, dataset, columnKeys);&#13;&#10;            }&#13;&#10;            line = reader.readLine();&#13;&#10;            lineIndex++;&#13;&#10;        }&#13;&#10;        return dataset;&#13;&#10;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Extracts the column keys from a string.&#13;&#10;     *&#13;&#10;     * @param line  a line from the input file.&#13;&#10;     *&#13;&#10;     * @return A list of column keys.&#13;&#10;     */&#13;&#10;    private List extractColumnKeys(String line) {&#13;&#10;        List keys = new java.util.ArrayList();&#13;&#10;        int fieldIndex = 0;&#13;&#10;        int start = 0;&#13;&#10;        for (int i = 0; i &lt; line.length(); i++) {&#13;&#10;            if (line.charAt(i) == this.fieldDelimiter) {&#13;&#10;                if (fieldIndex &gt; 0) {  // first field is ignored, since&#13;&#10;                                       // column 0 is for row keys&#13;&#10;                    String key = line.substring(start, i);&#13;&#10;                    keys.add(removeStringDelimiters(key));&#13;&#10;                }&#13;&#10;                start = i + 1;&#13;&#10;                fieldIndex++;&#13;&#10;            }&#13;&#10;        }&#13;&#10;        String key = line.substring(start, line.length());&#13;&#10;        keys.add(removeStringDelimiters(key));&#13;&#10;        return keys;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Extracts the row key and data for a single line from the input source.&#13;&#10;     *&#13;&#10;     * @param line  the line from the input source.&#13;&#10;     * @param dataset  the dataset to be populated.&#13;&#10;     * @param columnKeys  the column keys.&#13;&#10;     */&#13;&#10;    private void extractRowKeyAndData(String line,&#13;&#10;                                      DefaultCategoryDataset dataset,&#13;&#10;                                      List columnKeys) {&#13;&#10;        Comparable rowKey = null;&#13;&#10;        int fieldIndex = 0;&#13;&#10;        int start = 0;&#13;&#10;        for (int i = 0; i &lt; line.length(); i++) {&#13;&#10;            if (line.charAt(i) == this.fieldDelimiter) {&#13;&#10;                if (fieldIndex == 0) {  // first field contains the row key&#13;&#10;                    String key = line.substring(start, i);&#13;&#10;                    rowKey = removeStringDelimiters(key);&#13;&#10;                }&#13;&#10;                else {  // remaining fields contain values&#13;&#10;                    Double value = Double.valueOf(&#13;&#10;                        removeStringDelimiters(line.substring(start, i))&#13;&#10;                    );&#13;&#10;                    dataset.addValue(&#13;&#10;                        value, rowKey,&#13;&#10;                        (Comparable) columnKeys.get(fieldIndex - 1)&#13;&#10;                    );&#13;&#10;                }&#13;&#10;                start = i + 1;&#13;&#10;                fieldIndex++;&#13;&#10;            }&#13;&#10;        }&#13;&#10;        Double value = Double.valueOf(&#13;&#10;            removeStringDelimiters(line.substring(start, line.length()))&#13;&#10;        );&#13;&#10;        dataset.addValue(&#13;&#10;            value, rowKey, (Comparable) columnKeys.get(fieldIndex - 1)&#13;&#10;        );&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Removes the string delimiters from a key (as well as any white space&#13;&#10;     * outside the delimiters).&#13;&#10;     *&#13;&#10;     * @param key  the key (including delimiters).&#13;&#10;     *&#13;&#10;     * @return The key without delimiters.&#13;&#10;     */&#13;&#10;    private String removeStringDelimiters(String key) {&#13;&#10;        String k = key.trim();&#13;&#10;        if (k.charAt(0) == this.textDelimiter) {&#13;&#10;            k = k.substring(1);&#13;&#10;        }&#13;&#10;        if (k.charAt(k.length() - 1) == this.textDelimiter) {&#13;&#10;            k = k.substring(0, k.length() - 1);&#13;&#10;        }&#13;&#10;        return k;&#13;&#10;    }&#13;&#10;&#13;&#10;}&#13;&#10;" Filename="CSV.java" Intrnl_Id="1"/>
+<SrcFile Content="/* ===========================================================&#13;&#10; * JFreeChart : a free chart library for the Java(tm) platform&#13;&#10; * ===========================================================&#13;&#10; *&#13;&#10; * (C) Copyright 2000-2014, by Object Refinery Limited and Contributors.&#13;&#10; *&#13;&#10; * Project Info:  http://www.jfree.org/jfreechart/index.html&#13;&#10; *&#13;&#10; * This library is free software; you can redistribute it and/or modify it&#13;&#10; * under the terms of the GNU Lesser General Public License as published by&#13;&#10; * the Free Software Foundation; either version 2.1 of the License, or&#13;&#10; * (at your option) any later version.&#13;&#10; *&#13;&#10; * This library is distributed in the hope that it will be useful, but&#13;&#10; * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY&#13;&#10; * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public&#13;&#10; * License for more details.&#13;&#10; *&#13;&#10; * You should have received a copy of the GNU Lesser General Public&#13;&#10; * License along with this library; if not, write to the Free Software&#13;&#10; * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,&#13;&#10; * USA.&#13;&#10; *&#13;&#10; * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. &#13;&#10; * Other names may be trademarks of their respective owners.]&#13;&#10; *&#13;&#10; * ----------&#13;&#10; * Range.java&#13;&#10; * ----------&#13;&#10; * (C) Copyright 2002-2014, by Object Refinery Limited and Contributors.&#13;&#10; *&#13;&#10; * Original Author:  David Gilbert (for Object Refinery Limited);&#13;&#10; * Contributor(s):   Chuanhao Chiu;&#13;&#10; *                   Bill Kelemen;&#13;&#10; *                   Nicolas Brodu;&#13;&#10; *                   Sergei Ivanov;&#13;&#10; *&#13;&#10; * Changes (from 23-Jun-2001)&#13;&#10; * --------------------------&#13;&#10; * 22-Apr-2002 : Version 1, loosely based by code by Bill Kelemen (DG);&#13;&#10; * 30-Apr-2002 : Added getLength() and getCentralValue() methods.  Changed&#13;&#10; *               argument check in constructor (DG);&#13;&#10; * 13-Jun-2002 : Added contains(double) method (DG);&#13;&#10; * 22-Aug-2002 : Added fix to combine method where both ranges are null, thanks&#13;&#10; *               to Chuanhao Chiu for reporting and fixing this (DG);&#13;&#10; * 07-Oct-2002 : Fixed errors reported by Checkstyle (DG);&#13;&#10; * 26-Mar-2003 : Implemented Serializable (DG);&#13;&#10; * 14-Aug-2003 : Added equals() method (DG);&#13;&#10; * 27-Aug-2003 : Added toString() method (BK);&#13;&#10; * 11-Sep-2003 : Added Clone Support (NB);&#13;&#10; * 23-Sep-2003 : Fixed Checkstyle issues (DG);&#13;&#10; * 25-Sep-2003 : Oops, Range immutable, clone not necessary (NB);&#13;&#10; * 05-May-2004 : Added constrain() and intersects() methods (DG);&#13;&#10; * 18-May-2004 : Added expand() method (DG);&#13;&#10; * ------------- JFreeChart 1.0.x ---------------------------------------------&#13;&#10; * 11-Jan-2006 : Added new method expandToInclude(Range, double) (DG);&#13;&#10; * 18-Dec-2007 : New methods intersects(Range) and scale(...) thanks to Sergei&#13;&#10; *               Ivanov (DG);&#13;&#10; * 08-Jan-2012 : New method combineIgnoringNaN() (DG);&#13;&#10; * 23-Feb-2014 : Added isNaNRange() method (DG);&#13;&#10; * &#13;&#10; */&#13;&#10;&#13;&#10;package org.jfree.data;&#13;&#10;&#13;&#10;import java.io.Serializable;&#13;&#10;import org.jfree.chart.util.ParamChecks;&#13;&#10;&#13;&#10;/**&#13;&#10; * Represents an immutable range of values.&#13;&#10; */&#13;&#10;public strictfp class Range implements Serializable {&#13;&#10;&#13;&#10;    /** For serialization. */&#13;&#10;    private static final long serialVersionUID = -906333695431863380L;&#13;&#10;&#13;&#10;    /** The lower bound of the range. */&#13;&#10;    private double lower;&#13;&#10;&#13;&#10;    /** The upper bound of the range. */&#13;&#10;    private double upper;&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Creates a new range.&#13;&#10;     *&#13;&#10;     * @param lower  the lower bound (must be &amp;lt;= upper bound).&#13;&#10;     * @param upper  the upper bound (must be &amp;gt;= lower bound).&#13;&#10;     */&#13;&#10;    public Range(double lower, double upper) {&#13;&#10;        if (lower &gt; upper) {&#13;&#10;            String msg = &quot;Range(double, double): require lower (&quot; + lower&#13;&#10;                + &quot;) &lt;= upper (&quot; + upper + &quot;).&quot;;&#13;&#10;            throw new IllegalArgumentException(msg);&#13;&#10;        }&#13;&#10;        this.lower = lower;&#13;&#10;        this.upper = upper;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the lower bound for the range.&#13;&#10;     *&#13;&#10;     * @return The lower bound.&#13;&#10;     */&#13;&#10;    public double getLowerBound() {&#13;&#10;        return this.lower;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the upper bound for the range.&#13;&#10;     *&#13;&#10;     * @return The upper bound.&#13;&#10;     */&#13;&#10;    public double getUpperBound() {&#13;&#10;        return this.upper;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the length of the range.&#13;&#10;     *&#13;&#10;     * @return The length.&#13;&#10;     */&#13;&#10;    public double getLength() {&#13;&#10;        return this.upper - this.lower;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the central value for the range.&#13;&#10;     *&#13;&#10;     * @return The central value.&#13;&#10;     */&#13;&#10;    public double getCentralValue() {&#13;&#10;        return this.lower / 2.0 + this.upper / 2.0;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns &lt;code&gt;true&lt;/code&gt; if the range contains the specified value and&#13;&#10;     * &lt;code&gt;false&lt;/code&gt; otherwise.&#13;&#10;     *&#13;&#10;     * @param value  the value to lookup.&#13;&#10;     *&#13;&#10;     * @return &lt;code&gt;true&lt;/code&gt; if the range contains the specified value.&#13;&#10;     */&#13;&#10;    public boolean contains(double value) {&#13;&#10;        return (value &gt;= this.lower &amp;&amp; value &lt;= this.upper);&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns &lt;code&gt;true&lt;/code&gt; if the range intersects with the specified&#13;&#10;     * range, and &lt;code&gt;false&lt;/code&gt; otherwise.&#13;&#10;     *&#13;&#10;     * @param b0  the lower bound (should be &amp;lt;= b1).&#13;&#10;     * @param b1  the upper bound (should be &amp;gt;= b0).&#13;&#10;     *&#13;&#10;     * @return A boolean.&#13;&#10;     */&#13;&#10;    public boolean intersects(double b0, double b1) {&#13;&#10;        if (b0 &lt;= this.lower) {&#13;&#10;            return (b1 &gt; this.lower);&#13;&#10;        }&#13;&#10;        else {&#13;&#10;            return (b0 &lt; this.upper &amp;&amp; b1 &gt;= b0);&#13;&#10;        }&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns &lt;code&gt;true&lt;/code&gt; if the range intersects with the specified&#13;&#10;     * range, and &lt;code&gt;false&lt;/code&gt; otherwise.&#13;&#10;     *&#13;&#10;     * @param range  another range (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     *&#13;&#10;     * @return A boolean.&#13;&#10;     *&#13;&#10;     * @since 1.0.9&#13;&#10;     */&#13;&#10;    public boolean intersects(Range range) {&#13;&#10;        return intersects(range.getLowerBound(), range.getUpperBound());&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the value within the range that is closest to the specified&#13;&#10;     * value.&#13;&#10;     *&#13;&#10;     * @param value  the value.&#13;&#10;     *&#13;&#10;     * @return The constrained value.&#13;&#10;     */&#13;&#10;    public double constrain(double value) {&#13;&#10;        double result = value;&#13;&#10;        if (!contains(value)) {&#13;&#10;            if (value &gt; this.upper) {&#13;&#10;                result = this.upper;&#13;&#10;            }&#13;&#10;            else if (value &lt; this.lower) {&#13;&#10;                result = this.lower;&#13;&#10;            }&#13;&#10;        }&#13;&#10;        return result;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Creates a new range by combining two existing ranges.&#13;&#10;     * &lt;P&gt;&#13;&#10;     * Note that:&#13;&#10;     * &lt;ul&gt;&#13;&#10;     *   &lt;li&gt;either range can be &lt;code&gt;null&lt;/code&gt;, in which case the other&#13;&#10;     *       range is returned;&lt;/li&gt;&#13;&#10;     *   &lt;li&gt;if both ranges are &lt;code&gt;null&lt;/code&gt; the return value is&#13;&#10;     *       &lt;code&gt;null&lt;/code&gt;.&lt;/li&gt;&#13;&#10;     * &lt;/ul&gt;&#13;&#10;     *&#13;&#10;     * @param range1  the first range (&lt;code&gt;null&lt;/code&gt; permitted).&#13;&#10;     * @param range2  the second range (&lt;code&gt;null&lt;/code&gt; permitted).&#13;&#10;     *&#13;&#10;     * @return A new range (possibly &lt;code&gt;null&lt;/code&gt;).&#13;&#10;     */&#13;&#10;    public static Range combine(Range range1, Range range2) {&#13;&#10;        if (range1 == null) {&#13;&#10;            return range2;&#13;&#10;        }&#13;&#10;        if (range2 == null) {&#13;&#10;            return range1;&#13;&#10;        }&#13;&#10;        double l = Math.min(range1.getLowerBound(), range2.getLowerBound());&#13;&#10;        double u = Math.max(range1.getUpperBound(), range2.getUpperBound());&#13;&#10;        return new Range(l, u);&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns a new range that spans both &lt;code&gt;range1&lt;/code&gt; and &#13;&#10;     * &lt;code&gt;range2&lt;/code&gt;.  This method has a special handling to ignore&#13;&#10;     * Double.NaN values.&#13;&#10;     *&#13;&#10;     * @param range1  the first range (&lt;code&gt;null&lt;/code&gt; permitted).&#13;&#10;     * @param range2  the second range (&lt;code&gt;null&lt;/code&gt; permitted).&#13;&#10;     *&#13;&#10;     * @return A new range (possibly &lt;code&gt;null&lt;/code&gt;).&#13;&#10;     *&#13;&#10;     * @since 1.0.15&#13;&#10;     */&#13;&#10;    public static Range combineIgnoringNaN(Range range1, Range range2) {&#13;&#10;        if (range1 == null) {&#13;&#10;            if (range2 != null &amp;&amp; range2.isNaNRange()) {&#13;&#10;                return null;&#13;&#10;            }&#13;&#10;            return range2;&#13;&#10;        }&#13;&#10;        if (range2 == null) {&#13;&#10;            if (range1.isNaNRange()) {&#13;&#10;                return null;&#13;&#10;            }&#13;&#10;            return range1;&#13;&#10;        }&#13;&#10;        double l = min(range1.getLowerBound(), range2.getLowerBound());&#13;&#10;        double u = max(range1.getUpperBound(), range2.getUpperBound());&#13;&#10;        if (Double.isNaN(l) &amp;&amp; Double.isNaN(u)) {&#13;&#10;            return null;&#13;&#10;        }&#13;&#10;        return new Range(l, u);&#13;&#10;    }&#13;&#10;    &#13;&#10;    /**&#13;&#10;     * Returns the minimum value.  If either value is NaN, the other value is &#13;&#10;     * returned.  If both are NaN, NaN is returned.&#13;&#10;     * &#13;&#10;     * @param d1  value 1.&#13;&#10;     * @param d2  value 2.&#13;&#10;     * &#13;&#10;     * @return The minimum of the two values. &#13;&#10;     */&#13;&#10;    private static double min(double d1, double d2) {&#13;&#10;        if (Double.isNaN(d1)) {&#13;&#10;            return d2;&#13;&#10;        }&#13;&#10;        if (Double.isNaN(d2)) {&#13;&#10;            return d1;&#13;&#10;        }&#13;&#10;        return Math.min(d1, d2);&#13;&#10;    }&#13;&#10;&#13;&#10;    private static double max(double d1, double d2) {&#13;&#10;        if (Double.isNaN(d1)) {&#13;&#10;            return d2;&#13;&#10;        }&#13;&#10;        if (Double.isNaN(d2)) {&#13;&#10;            return d1;&#13;&#10;        }&#13;&#10;        return Math.max(d1, d2);&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns a range that includes all the values in the specified&#13;&#10;     * &lt;code&gt;range&lt;/code&gt; AND the specified &lt;code&gt;value&lt;/code&gt;.&#13;&#10;     *&#13;&#10;     * @param range  the range (&lt;code&gt;null&lt;/code&gt; permitted).&#13;&#10;     * @param value  the value that must be included.&#13;&#10;     *&#13;&#10;     * @return A range.&#13;&#10;     *&#13;&#10;     * @since 1.0.1&#13;&#10;     */&#13;&#10;    public static Range expandToInclude(Range range, double value) {&#13;&#10;        if (range == null) {&#13;&#10;            return new Range(value, value);&#13;&#10;        }&#13;&#10;        if (value &lt; range.getLowerBound()) {&#13;&#10;            return new Range(value, range.getUpperBound());&#13;&#10;        }&#13;&#10;        else if (value &gt; range.getUpperBound()) {&#13;&#10;            return new Range(range.getLowerBound(), value);&#13;&#10;        }&#13;&#10;        else {&#13;&#10;            return range;&#13;&#10;        }&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Creates a new range by adding margins to an existing range.&#13;&#10;     *&#13;&#10;     * @param range  the range (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     * @param lowerMargin  the lower margin (expressed as a percentage of the&#13;&#10;     *                     range length).&#13;&#10;     * @param upperMargin  the upper margin (expressed as a percentage of the&#13;&#10;     *                     range length).&#13;&#10;     *&#13;&#10;     * @return The expanded range.&#13;&#10;     */&#13;&#10;    public static Range expand(Range range,&#13;&#10;                               double lowerMargin, double upperMargin) {&#13;&#10;        ParamChecks.nullNotPermitted(range, &quot;range&quot;);&#13;&#10;        double length = range.getLength();&#13;&#10;        double lower = range.getLowerBound() - length * lowerMargin;&#13;&#10;        double upper = range.getUpperBound() + length * upperMargin;&#13;&#10;        if (lower &gt; upper) {&#13;&#10;            lower = lower / 2.0 + upper / 2.0;&#13;&#10;            upper = lower;&#13;&#10;        }&#13;&#10;        return new Range(lower, upper);&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Shifts the range by the specified amount.&#13;&#10;     *&#13;&#10;     * @param base  the base range (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     * @param delta  the shift amount.&#13;&#10;     *&#13;&#10;     * @return A new range.&#13;&#10;     */&#13;&#10;    public static Range shift(Range base, double delta) {&#13;&#10;        return shift(base, delta, false);&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Shifts the range by the specified amount.&#13;&#10;     *&#13;&#10;     * @param base  the base range (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     * @param delta  the shift amount.&#13;&#10;     * @param allowZeroCrossing  a flag that determines whether or not the&#13;&#10;     *                           bounds of the range are allowed to cross&#13;&#10;     *                           zero after adjustment.&#13;&#10;     *&#13;&#10;     * @return A new range.&#13;&#10;     */&#13;&#10;    public static Range shift(Range base, double delta,&#13;&#10;                              boolean allowZeroCrossing) {&#13;&#10;        ParamChecks.nullNotPermitted(base, &quot;base&quot;);&#13;&#10;        if (allowZeroCrossing) {&#13;&#10;            return new Range(base.getLowerBound() + delta,&#13;&#10;                    base.getUpperBound() + delta);&#13;&#10;        }&#13;&#10;        else {&#13;&#10;            return new Range(shiftWithNoZeroCrossing(base.getLowerBound(),&#13;&#10;                    delta), shiftWithNoZeroCrossing(base.getUpperBound(),&#13;&#10;                    delta));&#13;&#10;        }&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the given &lt;code&gt;value&lt;/code&gt; adjusted by &lt;code&gt;delta&lt;/code&gt; but&#13;&#10;     * with a check to prevent the result from crossing &lt;code&gt;0.0&lt;/code&gt;.&#13;&#10;     *&#13;&#10;     * @param value  the value.&#13;&#10;     * @param delta  the adjustment.&#13;&#10;     *&#13;&#10;     * @return The adjusted value.&#13;&#10;     */&#13;&#10;    private static double shiftWithNoZeroCrossing(double value, double delta) {&#13;&#10;        if (value &gt; 0.0) {&#13;&#10;            return Math.max(value + delta, 0.0);&#13;&#10;        }&#13;&#10;        else if (value &lt; 0.0) {&#13;&#10;            return Math.min(value + delta, 0.0);&#13;&#10;        }&#13;&#10;        else {&#13;&#10;            return value + delta;&#13;&#10;        }&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Scales the range by the specified factor.&#13;&#10;     *&#13;&#10;     * @param base the base range (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     * @param factor the scaling factor (must be non-negative).&#13;&#10;     *&#13;&#10;     * @return A new range.&#13;&#10;     *&#13;&#10;     * @since 1.0.9&#13;&#10;     */&#13;&#10;    public static Range scale(Range base, double factor) {&#13;&#10;        ParamChecks.nullNotPermitted(base, &quot;base&quot;);&#13;&#10;        if (factor &lt; 0) {&#13;&#10;            throw new IllegalArgumentException(&quot;Negative 'factor' argument.&quot;);&#13;&#10;        }&#13;&#10;        return new Range(base.getLowerBound() * factor,&#13;&#10;                base.getUpperBound() * factor);&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Tests this object for equality with an arbitrary object.&#13;&#10;     *&#13;&#10;     * @param obj  the object to test against (&lt;code&gt;null&lt;/code&gt; permitted).&#13;&#10;     *&#13;&#10;     * @return A boolean.&#13;&#10;     */&#13;&#10;    @Override&#13;&#10;    public boolean equals(Object obj) {&#13;&#10;        if (!(obj instanceof Range)) {&#13;&#10;            return false;&#13;&#10;        }&#13;&#10;        Range range = (Range) obj;&#13;&#10;        if (!(this.lower == range.lower)) {&#13;&#10;            return false;&#13;&#10;        }&#13;&#10;        if (!(this.upper == range.upper)) {&#13;&#10;            return false;&#13;&#10;        }&#13;&#10;        return true;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns &lt;code&gt;true&lt;/code&gt; if both the lower and upper bounds are &#13;&#10;     * &lt;code&gt;Double.NaN&lt;/code&gt;, and &lt;code&gt;false&lt;/code&gt; otherwise.&#13;&#10;     * &#13;&#10;     * @return A boolean.&#13;&#10;     * &#13;&#10;     * @since 1.0.18&#13;&#10;     */&#13;&#10;    public boolean isNaNRange() {&#13;&#10;        return Double.isNaN(this.lower) &amp;&amp; Double.isNaN(this.upper);&#13;&#10;    }&#13;&#10;    &#13;&#10;    /**&#13;&#10;     * Returns a hash code.&#13;&#10;     *&#13;&#10;     * @return A hash code.&#13;&#10;     */&#13;&#10;    @Override&#13;&#10;    public int hashCode() {&#13;&#10;        int result;&#13;&#10;        long temp;&#13;&#10;        temp = Double.doubleToLongBits(this.lower);&#13;&#10;        result = (int) (temp ^ (temp &gt;&gt;&gt; 32));&#13;&#10;        temp = Double.doubleToLongBits(this.upper);&#13;&#10;        result = 29 * result + (int) (temp ^ (temp &gt;&gt;&gt; 32));&#13;&#10;        return result;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns a string representation of this Range.&#13;&#10;     *&#13;&#10;     * @return A String &quot;Range[lower,upper]&quot; where lower=lower range and&#13;&#10;     *         upper=upper range.&#13;&#10;     */&#13;&#10;    @Override&#13;&#10;    public String toString() {&#13;&#10;        return (&quot;Range[&quot; + this.lower + &quot;,&quot; + this.upper + &quot;]&quot;);&#13;&#10;    }&#13;&#10;&#13;&#10;}&#13;&#10;" Filename="Range.java" Intrnl_Id="2"/>
+<SrcFile Content="/* ===========================================================&#13;&#10; * JFreeChart : a free chart library for the Java(tm) platform&#13;&#10; * ===========================================================&#13;&#10; *&#13;&#10; * (C) Copyright 2000-2013, by Object Refinery Limited and Contributors.&#13;&#10; *&#13;&#10; * Project Info:  http://www.jfree.org/jfreechart/index.html&#13;&#10; *&#13;&#10; * This library is free software; you can redistribute it and/or modify it&#13;&#10; * under the terms of the GNU Lesser General Public License as published by&#13;&#10; * the Free Software Foundation; either version 2.1 of the License, or&#13;&#10; * (at your option) any later version.&#13;&#10; *&#13;&#10; * This library is distributed in the hope that it will be useful, but&#13;&#10; * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY&#13;&#10; * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public&#13;&#10; * License for more details.&#13;&#10; *&#13;&#10; * You should have received a copy of the GNU Lesser General Public&#13;&#10; * License along with this library; if not, write to the Free Software&#13;&#10; * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,&#13;&#10; * USA.&#13;&#10; *&#13;&#10; * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. &#13;&#10; * Other names may be trademarks of their respective owners.]&#13;&#10; *&#13;&#10; * ------------------&#13;&#10; * DataUtilities.java&#13;&#10; * ------------------&#13;&#10; * (C) Copyright 2003-2013, by Object Refinery Limited and contributors.&#13;&#10; *&#13;&#10; * Original Author:  David Gilbert (for Object Refinery Limited);&#13;&#10; * Contributor(s):   Peter Kolb (patch 2511330);&#13;&#10; *&#13;&#10; * Changes&#13;&#10; * -------&#13;&#10; * 05-Mar-2003 : Version 1 (DG);&#13;&#10; * 03-Mar-2005 : Moved createNumberArray() and createNumberArray2D() methods&#13;&#10; *               from the DatasetUtilities class (DG);&#13;&#10; * 17-May-2005 : Added calculateColumnTotal() and calculateRowTotal()&#13;&#10; *               methods (DG);&#13;&#10; * 28-Jan-2009 : Added equal(double[][], double[][]) method (DG);&#13;&#10; * 28-Jan-2009 : Added clone(double[][]) method (DG);&#13;&#10; * 04-Feb-2009 : Added calculateColumnTotal/RowTotal variants (PK);&#13;&#10; * 03-Jul-2013 : Use ParamChecks (DG);&#13;&#10; *&#13;&#10; */&#13;&#10;&#13;&#10;package org.jfree.data;&#13;&#10;&#13;&#10;import java.util.Arrays;&#13;&#10;import org.jfree.chart.util.ParamChecks;&#13;&#10;import org.jfree.data.general.DatasetUtilities;&#13;&#10;&#13;&#10;/**&#13;&#10; * Utility methods for use with some of the data classes (but not the datasets,&#13;&#10; * see {@link DatasetUtilities}).&#13;&#10; */&#13;&#10;public abstract class DataUtilities {&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Tests two arrays for equality.  To be considered equal, the arrays must&#13;&#10;     * have exactly the same dimensions, and the values in each array must also&#13;&#10;     * match (two values that qre both NaN or both INF are considered equal&#13;&#10;     * in this test).&#13;&#10;     *&#13;&#10;     * @param a  the first array (&lt;code&gt;null&lt;/code&gt; permitted).&#13;&#10;     * @param b  the second array (&lt;code&gt;null&lt;/code&gt; permitted).&#13;&#10;     *&#13;&#10;     * @return A boolean.&#13;&#10;     *&#13;&#10;     * @since 1.0.13&#13;&#10;     */&#13;&#10;    public static boolean equal(double[][] a, double[][] b) {&#13;&#10;        if (a == null) {&#13;&#10;            return (b == null);&#13;&#10;        }&#13;&#10;        if (b == null) {&#13;&#10;            return false;  // already know 'a' isn't null&#13;&#10;        }&#13;&#10;        if (a.length != b.length) {&#13;&#10;            return false;&#13;&#10;        }&#13;&#10;        for (int i = 0; i &lt; a.length; i++) {&#13;&#10;            if (!Arrays.equals(a[i], b[i])) {&#13;&#10;                return false;&#13;&#10;            }&#13;&#10;        }&#13;&#10;        return true;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns a clone of the specified array.&#13;&#10;     *&#13;&#10;     * @param source  the source array (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     *&#13;&#10;     * @return A clone of the array.&#13;&#10;     *&#13;&#10;     * @since 1.0.13&#13;&#10;     */&#13;&#10;    public static double[][] clone(double[][] source) {&#13;&#10;        ParamChecks.nullNotPermitted(source, &quot;source&quot;);&#13;&#10;        double[][] clone = new double[source.length][];&#13;&#10;        for (int i = 0; i &lt; source.length; i++) {&#13;&#10;            if (source[i] != null) {&#13;&#10;                double[] row = new double[source[i].length];&#13;&#10;                System.arraycopy(source[i], 0, row, 0, source[i].length);&#13;&#10;                clone[i] = row;&#13;&#10;            }&#13;&#10;        }&#13;&#10;        return clone;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the total of the values in one column of the supplied data&#13;&#10;     * table.&#13;&#10;     *&#13;&#10;     * @param data  the table of values (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     * @param column  the column index (zero-based).&#13;&#10;     *&#13;&#10;     * @return The total of the values in the specified column.&#13;&#10;     */&#13;&#10;    public static double calculateColumnTotal(Values2D data, int column) {&#13;&#10;        ParamChecks.nullNotPermitted(data, &quot;data&quot;);&#13;&#10;        double total = 0.0;&#13;&#10;        int rowCount = data.getRowCount();&#13;&#10;        for (int r = 0; r &lt; rowCount; r++) {&#13;&#10;            Number n = data.getValue(r, column);&#13;&#10;            if (n != null) {&#13;&#10;                total += n.doubleValue();&#13;&#10;            }&#13;&#10;        }&#13;&#10;        return total;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the total of the values in one column of the supplied data&#13;&#10;     * table by taking only the row numbers in the array into account.&#13;&#10;     *&#13;&#10;     * @param data  the table of values (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     * @param column  the column index (zero-based).&#13;&#10;     * @param validRows the array with valid rows (zero-based).&#13;&#10;     *&#13;&#10;     * @return The total of the valid values in the specified column.&#13;&#10;     *&#13;&#10;     * @since 1.0.13&#13;&#10;     */&#13;&#10;    public static double calculateColumnTotal(Values2D data, int column,&#13;&#10;             int[] validRows) {&#13;&#10;        ParamChecks.nullNotPermitted(data, &quot;data&quot;);&#13;&#10;        double total = 0.0;&#13;&#10;        int rowCount = data.getRowCount();&#13;&#10;        for (int v = 0; v &lt; validRows.length; v++) {&#13;&#10;            int row = validRows[v];&#13;&#10;            if (row &lt; rowCount) {&#13;&#10;                Number n = data.getValue(row, column);&#13;&#10;                if (n != null) {&#13;&#10;                    total += n.doubleValue();&#13;&#10;                }&#13;&#10;            }&#13;&#10;        }&#13;&#10;        return total;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the total of the values in one row of the supplied data&#13;&#10;     * table.&#13;&#10;     *&#13;&#10;     * @param data  the table of values (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     * @param row  the row index (zero-based).&#13;&#10;     *&#13;&#10;     * @return The total of the values in the specified row.&#13;&#10;     */&#13;&#10;    public static double calculateRowTotal(Values2D data, int row) {&#13;&#10;        ParamChecks.nullNotPermitted(data, &quot;data&quot;);&#13;&#10;        double total = 0.0;&#13;&#10;        int columnCount = data.getColumnCount();&#13;&#10;        for (int c = 0; c &lt; columnCount; c++) {&#13;&#10;            Number n = data.getValue(row, c);&#13;&#10;            if (n != null) {&#13;&#10;                total += n.doubleValue();&#13;&#10;            }&#13;&#10;        }&#13;&#10;        return total;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns the total of the values in one row of the supplied data&#13;&#10;     * table by taking only the column numbers in the array into account.&#13;&#10;     *&#13;&#10;     * @param data  the table of values (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     * @param row  the row index (zero-based).&#13;&#10;     * @param validCols the array with valid cols (zero-based).&#13;&#10;     *&#13;&#10;     * @return The total of the valid values in the specified row.&#13;&#10;     *&#13;&#10;     * @since 1.0.13&#13;&#10;     */&#13;&#10;    public static double calculateRowTotal(Values2D data, int row,&#13;&#10;             int[] validCols) {&#13;&#10;        ParamChecks.nullNotPermitted(data, &quot;data&quot;);&#13;&#10;        double total = 0.0;&#13;&#10;        int colCount = data.getColumnCount();&#13;&#10;        for (int v = 0; v &lt; validCols.length; v++) {&#13;&#10;            int col = validCols[v];&#13;&#10;            if (col &lt; colCount) {&#13;&#10;                Number n = data.getValue(row, col);&#13;&#10;                if (n != null) {&#13;&#10;                    total += n.doubleValue();&#13;&#10;                }&#13;&#10;            }&#13;&#10;        }&#13;&#10;        return total;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Constructs an array of &lt;code&gt;Number&lt;/code&gt; objects from an array of&#13;&#10;     * &lt;code&gt;double&lt;/code&gt; primitives.&#13;&#10;     *&#13;&#10;     * @param data  the data (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     *&#13;&#10;     * @return An array of &lt;code&gt;Double&lt;/code&gt;.&#13;&#10;     */&#13;&#10;    public static Number[] createNumberArray(double[] data) {&#13;&#10;        ParamChecks.nullNotPermitted(data, &quot;data&quot;);&#13;&#10;        Number[] result = new Number[data.length];&#13;&#10;        for (int i = 0; i &lt; data.length; i++) {&#13;&#10;            result[i] = new Double(data[i]);&#13;&#10;        }&#13;&#10;        return result;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Constructs an array of arrays of &lt;code&gt;Number&lt;/code&gt; objects from a&#13;&#10;     * corresponding structure containing &lt;code&gt;double&lt;/code&gt; primitives.&#13;&#10;     *&#13;&#10;     * @param data  the data (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     *&#13;&#10;     * @return An array of &lt;code&gt;Double&lt;/code&gt;.&#13;&#10;     */&#13;&#10;    public static Number[][] createNumberArray2D(double[][] data) {&#13;&#10;        ParamChecks.nullNotPermitted(data, &quot;data&quot;);&#13;&#10;        int l1 = data.length;&#13;&#10;        Number[][] result = new Number[l1][];&#13;&#10;        for (int i = 0; i &lt; l1; i++) {&#13;&#10;            result[i] = createNumberArray(data[i]);&#13;&#10;        }&#13;&#10;        return result;&#13;&#10;    }&#13;&#10;&#13;&#10;    /**&#13;&#10;     * Returns a {@link KeyedValues} instance that contains the cumulative&#13;&#10;     * percentage values for the data in another {@link KeyedValues} instance.&#13;&#10;     * &lt;p&gt;&#13;&#10;     * The percentages are values between 0.0 and 1.0 (where 1.0 = 100%).&#13;&#10;     *&#13;&#10;     * @param data  the data (&lt;code&gt;null&lt;/code&gt; not permitted).&#13;&#10;     *&#13;&#10;     * @return The cumulative percentages.&#13;&#10;     */&#13;&#10;    public static KeyedValues getCumulativePercentages(KeyedValues data) {&#13;&#10;        ParamChecks.nullNotPermitted(data, &quot;data&quot;);&#13;&#10;        DefaultKeyedValues result = new DefaultKeyedValues();&#13;&#10;        double total = 0.0;&#13;&#10;        for (int i = 0; i &lt; data.getItemCount(); i++) {&#13;&#10;            Number v = data.getValue(i);&#13;&#10;            if (v != null) {&#13;&#10;                total = total + v.doubleValue();&#13;&#10;            }&#13;&#10;        }&#13;&#10;        double runningTotal = 0.0;&#13;&#10;        for (int i = 0; i &lt; data.getItemCount(); i++) {&#13;&#10;            Number v = data.getValue(i);&#13;&#10;            if (v != null) {&#13;&#10;                runningTotal = runningTotal + v.doubleValue();&#13;&#10;            }&#13;&#10;            result.addValue(data.getKey(i), new Double(runningTotal / total));&#13;&#10;        }&#13;&#10;        return result;&#13;&#10;    }&#13;&#10;&#13;&#10;}&#13;&#10;" Filename="DataUtilities.java" Intrnl_Id="3"/>
+<SrcFile Content="package Test;&#13;&#10;&#13;&#10;import org.jfree.data.Range;&#13;&#10;import org.junit.Assert;&#13;&#10;import org.junit.Test;&#13;&#10;&#13;&#10;public class TestRange {&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCombine_WithTwoSameRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange1 = new Range(0, 0);&#13;&#10;&#9;&#9;Range aRange2 = new Range(0, 0);&#13;&#10;&#9;&#9;Range result = Range.combine(aRange1, aRange2);&#13;&#10;&#9;&#9;Assert.assertEquals(0, result.getLength(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(0, result.getLowerBound(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(0, result.getUpperBound(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(0, result.getCentralValue(), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCombine_WithTwoIntersectRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange1 = new Range(-1, 1);&#13;&#10;&#9;&#9;Range aRange2 = new Range(-0.5, 5);&#13;&#10;&#9;&#9;Range result = Range.combine(aRange1, aRange2);&#13;&#10;&#9;&#9;Assert.assertEquals(6, result.getLength(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(-1, result.getLowerBound(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(5, result.getUpperBound(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(2, result.getCentralValue(), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCombine_WithTwoUnintersectRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange1 = new Range(-1, 0);&#13;&#10;&#9;&#9;Range aRange2 = new Range(0, 9);&#13;&#10;&#9;&#9;Range result = Range.combine(aRange1, aRange2);&#13;&#10;&#9;&#9;Assert.assertEquals(10, result.getLength(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(-1, result.getLowerBound(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(9, result.getUpperBound(), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(4, result.getCentralValue(), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testConstrain()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange = new Range(-1, 1);&#13;&#10;&#9;&#9;Assert.assertEquals(1, aRange.constrain(1), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(-1, aRange.constrain(-1), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(0, aRange.constrain(0), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(0.1, aRange.constrain(0.1), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(-0.1, aRange.constrain(-0.1), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(1, aRange.constrain(99), 0.000001);&#13;&#10;&#9;&#9;Assert.assertEquals(-1, aRange.constrain(-99), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testContains()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange = new Range(-1, 1);&#13;&#10;&#9;&#9;Assert.assertFalse(aRange.contains(-1.1));&#13;&#10;&#9;&#9;Assert.assertTrue(aRange.contains(-1));&#13;&#10;&#9;&#9;Assert.assertTrue(aRange.contains(0));&#13;&#10;&#9;&#9;Assert.assertTrue(aRange.contains(1));&#13;&#10;&#9;&#9;Assert.assertFalse(aRange.contains(1.1));&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testGetCentralValue_WithNegativeRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange = new Range(-10, -5);&#13;&#10;&#9;&#9;Assert.assertEquals(-7.5, aRange.getCentralValue(), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testGetCentralValue_WithNegativeAndPositiveRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange = new Range(-8, 6);&#13;&#10;&#9;&#9;Assert.assertEquals(-1, aRange.getCentralValue(), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testGetCentralValue_WithPositiveRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange = new Range(1, 6);&#13;&#10;&#9;&#9;Assert.assertEquals(3.5, aRange.getCentralValue(), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testGetLength_WithNegativeRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange = new Range(-10, -5);&#13;&#10;&#9;&#9;Assert.assertEquals(5, aRange.getLength(), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testGetLength_WithNegativeAndPositiveRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange = new Range(-8, 6);&#13;&#10;&#9;&#9;Assert.assertEquals(14, aRange.getLength(), 0.000001);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testGetLength_WithPositiveRange()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;Range aRange = new Range(1, 6);&#13;&#10;&#9;&#9;Assert.assertEquals(5, aRange.getLength(), 0.000001);&#13;&#10;&#9;}&#13;&#10;}&#13;&#10;" Filename="TestRange.java" Intrnl_Id="4"/>
+<SrcFile Content="package Test;&#13;&#10;&#13;&#10;import org.jfree.data.DataUtilities;&#13;&#10;import org.jfree.data.DefaultKeyedValues2D;&#13;&#10;import org.junit.Assert;&#13;&#10;import org.junit.Test;&#13;&#10;&#13;&#10;public class TestDataUtilities {&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCalculateColumnTotal_WithInvalidColumnKey()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();&#13;&#10;&#9;&#9;Assert.assertEquals(0, DataUtilities.calculateColumnTotal(values2d, -1), 0.1);&#13;&#10;&#9;&#9;Assert.assertEquals(0, DataUtilities.calculateColumnTotal(values2d, 0), 0.1);&#13;&#10;&#9;&#9;Assert.assertEquals(0, DataUtilities.calculateColumnTotal(values2d, 99), 0.1);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCalculateColumnTotal_WithEmptyValues()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();&#13;&#10;&#9;&#9;Assert.assertEquals(0, DataUtilities.calculateColumnTotal(values2d, 0), 0.1);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCalculateColumnTotal_WithIncremententalValues()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();&#13;&#10;&#9;&#9;for (int i = 0; i &lt; 10; i++) &#13;&#10;&#9;&#9;{&#13;&#10;&#9;&#9;&#9;values2d.addValue(i, i, i);&#13;&#10;&#9;&#9;}&#13;&#10;&#9;&#9;for (int i = 0; i &lt; 10; i++) &#13;&#10;&#9;&#9;{&#13;&#10;&#9;&#9;&#9;Assert.assertEquals(i, DataUtilities.calculateColumnTotal(values2d, i), 0.1);&#13;&#10;&#9;&#9;}&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCalculateRowTotal_WithInvalidRowKey()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();&#13;&#10;&#9;&#9;Assert.assertEquals(0, DataUtilities.calculateRowTotal(values2d, -1), 0.1);&#13;&#10;&#9;&#9;Assert.assertEquals(0, DataUtilities.calculateRowTotal(values2d, 0), 0.1);&#13;&#10;&#9;&#9;Assert.assertEquals(0, DataUtilities.calculateRowTotal(values2d, 99), 0.1);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCalculateRowTotal_WithEmptyValues()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();&#13;&#10;&#9;&#9;Assert.assertEquals(0, DataUtilities.calculateRowTotal(values2d, 0), 0.1);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCalculateRowTotal_WithIncremententalValues()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();&#13;&#10;&#9;&#9;for (int i = 0; i &lt; 10; i++) &#13;&#10;&#9;&#9;{&#13;&#10;&#9;&#9;&#9;values2d.addValue(i, i, i);&#13;&#10;&#9;&#9;}&#13;&#10;&#9;&#9;for (int i = 0; i &lt; 10; i++) &#13;&#10;&#9;&#9;{&#13;&#10;&#9;&#9;&#9;Assert.assertEquals(i, DataUtilities.calculateRowTotal(values2d, i), 0.1);&#13;&#10;&#9;&#9;}&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testClone()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;double[][] target = new double[2][];&#13;&#10;&#9;&#9;target[0] = new double[3];&#13;&#10;&#9;&#9;target[1] = new double[5];&#13;&#10;&#9;&#9;for(int i = 0; i &lt; target.length; i++) &#13;&#10;&#9;&#9;{ &#13;&#10;            for(int j = 0; j &lt; target[i].length; j++) &#13;&#10;            {&#13;&#10;            &#9;target[i][j] = j + 1; &#13;&#10;            }&#13;&#10;        } &#13;&#10;&#9;&#9;double[][] result = DataUtilities.clone(target);&#13;&#10;&#9;&#9;Assert.assertEquals(target.length, result.length);&#13;&#10;&#9;&#9;Assert.assertEquals(target[0].length, result[0].length);&#13;&#10;&#9;&#9;Assert.assertEquals(target[1].length, result[1].length);&#13;&#10;&#9;&#9;Assert.assertArrayEquals(target[0], result[0], 0.1);&#13;&#10;&#9;&#9;Assert.assertArrayEquals(target[1], result[1], 0.1);&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testCreateNumberArray()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;double[] target = new double[3];&#13;&#10;&#9;&#9;for (int i = 0; i &lt; target.length; i++)&#13;&#10;&#9;&#9;{&#13;&#10;&#9;&#9;&#9;target[i] = i;&#13;&#10;&#9;&#9;}&#13;&#10;&#9;&#9;Number[] aNumbers = DataUtilities.createNumberArray(target);&#13;&#10;&#9;&#9;Assert.assertEquals(target.length, aNumbers.length);&#13;&#10;&#9;&#9;for (int i = 0; i &lt; aNumbers.length; i++)&#13;&#10;&#9;&#9;{&#13;&#10;&#9;&#9;&#9;Assert.assertEquals(i, aNumbers[i].doubleValue(), 0.1);&#13;&#10;&#9;&#9;}&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testEqual()&#13;&#10;&#9;{&#13;&#10;&#9;&#9;double[][] target = new double[2][];&#13;&#10;&#9;&#9;double[][] comparator = new double[2][];&#13;&#10;&#9;&#9;target[0] = new double[3];&#13;&#10;&#9;&#9;target[1] = new double[5];&#13;&#10;&#9;&#9;comparator[0] = new double[3];&#13;&#10;&#9;&#9;comparator[1] = new double[5];&#13;&#10;&#9;&#9;for(int i = 0; i &lt; target.length; i++) &#13;&#10;&#9;&#9;{ &#13;&#10;            for(int j = 0; j &lt; target[i].length; j++) &#13;&#10;            {&#13;&#10;            &#9;target[i][j] = j + 1; &#13;&#10;            &#9;comparator[i][j] = j + 1; &#13;&#10;            }&#13;&#10;        } &#13;&#10;&#9;&#9;Assert.assertTrue(DataUtilities.equal(target, comparator));&#13;&#10;&#9;&#9;comparator[0][0] = 99;&#13;&#10;&#9;&#9;Assert.assertFalse(DataUtilities.equal(target, comparator));&#13;&#10;&#9;}&#13;&#10;}&#13;&#10;" Filename="TestDataUtilities.java" Intrnl_Id="5"/>
+<SrcFile Content="package Test;&#13;&#10;&#13;&#10;import java.io.IOException;&#13;&#10;import java.io.StringReader;&#13;&#10;&#13;&#10;import org.junit.Assert;&#13;&#10;import org.junit.Test;&#13;&#10;import org.jfree.data.category.CategoryDataset;&#13;&#10;import org.jfree.data.io.CSV;;&#13;&#10;&#13;&#10;public class TestCSV {&#13;&#10;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testReadCategoryDataset() throws IOException&#13;&#10;&#9;{&#13;&#10;&#9;&#9;CSV csv = new CSV();&#13;&#10;&#9;&#9;StringReader stringReader = new StringReader(&quot; , A,B\nC,\&quot;1\&quot;,\&quot;2\&quot;\nD,\&quot;3\&quot;,\&quot;4\&quot;&quot;);&#13;&#10;&#9;&#9;CategoryDataset categoryDataset = csv.readCategoryDataset(stringReader);&#13;&#10;&#9;&#9;Assert.assertEquals(2, categoryDataset.getColumnKeys().size());&#13;&#10;&#9;&#9;Assert.assertEquals(2, categoryDataset.getRowKeys().size());&#13;&#10;&#9;&#9;Assert.assertEquals(1.0, categoryDataset.getValue(0, 0));&#13;&#10;&#9;&#9;Assert.assertEquals(2.0, categoryDataset.getValue(0, 1));&#13;&#10;&#9;&#9;Assert.assertEquals(3.0, categoryDataset.getValue(1, 0));&#13;&#10;&#9;&#9;Assert.assertEquals(4.0, categoryDataset.getValue(1, 1));&#13;&#10;&#9;}&#13;&#10;&#9;&#13;&#10;&#9;@Test&#13;&#10;&#9;public void testReadCategoryDataset_WithTextDelimiter() throws IOException&#13;&#10;&#9;{&#13;&#10;&#9;&#9;CSV csv = new CSV();&#13;&#10;&#9;&#9;StringReader stringReader = new StringReader(&quot; , A,B\nC,\&quot;1\&quot;,\&quot;2\&quot;\nD,\&quot;3\&quot;,\&quot;4\&quot;&quot;);&#13;&#10;&#9;&#9;CategoryDataset categoryDataset = csv.readCategoryDataset(stringReader);&#13;&#10;&#9;&#9;Assert.assertEquals(2, categoryDataset.getColumnKeys().size());&#13;&#10;&#9;&#9;Assert.assertEquals(2, categoryDataset.getRowKeys().size());&#13;&#10;&#9;&#9;Assert.assertEquals(1.0, categoryDataset.getValue(0, 0));&#13;&#10;&#9;&#9;Assert.assertEquals(2.0, categoryDataset.getValue(0, 1));&#13;&#10;&#9;&#9;Assert.assertEquals(3.0, categoryDataset.getValue(1, 0));&#13;&#10;&#9;&#9;Assert.assertEquals(4.0, categoryDataset.getValue(1, 1));&#13;&#10;&#9;}&#13;&#10;}&#13;&#10;" Filename="TestCSV.java" Intrnl_Id="6"/>
+</SrcFileList>
+<CritList>
+<CritListEntry Name="org.codecover.model.utils.criteria.BranchCoverage" PluginName="org.codecover"/>
+<CritListEntry Name="org.codecover.model.utils.criteria.StatementCoverage" PluginName="org.codecover"/>
+</CritList>
+<BoolOpList/>
+<HierarchyLvlTypeList>
+<HierarchyLvlType EnglishName="package" IntrnlName="package" Intrnl_Id="7"/>
+<HierarchyLvlType EnglishName="class" IntrnlName="class" Intrnl_Id="8"/>
+<HierarchyLvlType EnglishName="method" IntrnlName="method" Intrnl_Id="9"/>
+<HierarchyLvlType EnglishName="default package" IntrnlName="default package" Intrnl_Id="10"/>
+</HierarchyLvlTypeList>
+<MASTRoot>
+<HierarchyLvl HierarchyLvlId="946" HierarchyLvlTypeId="10" Intrnl_Id="11" Name="default package">
+<Header/>
+<LocList/>
+<HierarchyLvl HierarchyLvlId="944" HierarchyLvlTypeId="7" Intrnl_Id="12" Name="org">
+<Header/>
+<LocList/>
+<HierarchyLvl HierarchyLvlId="943" HierarchyLvlTypeId="7" Intrnl_Id="13" Name="jfree">
+<Header/>
+<LocList/>
+<HierarchyLvl HierarchyLvlId="942" HierarchyLvlTypeId="7" Intrnl_Id="14" Name="data">
+<Header/>
+<LocList/>
+<HierarchyLvl HierarchyLvlId="941" HierarchyLvlTypeId="7" Intrnl_Id="15" Name="io">
+<Header/>
+<LocList/>
+<HierarchyLvl HierarchyLvlId="881" HierarchyLvlTypeId="8" Intrnl_Id="16" Name="CSV">
+<Header>
+<Loc EndOffset="1969" SrcFileId="1" StartOffset="1953"/>
+</Header>
+<LocList>
+<Loc EndOffset="6910" SrcFileId="1" StartOffset="1953"/>
+</LocList>
+<HierarchyLvl HierarchyLvlId="875" HierarchyLvlTypeId="9" Intrnl_Id="17" Name="CSV">
+<Header>
+<Loc EndOffset="2266" SrcFileId="1" StartOffset="2254"/>
+</Header>
+<LocList>
+<Loc EndOffset="2300" SrcFileId="1" StartOffset="2254"/>
+</LocList>
+<StmntSeq Intrnl_Id="18">
+<LocList>
+<Loc EndOffset="2293" SrcFileId="1" StartOffset="2278"/>
+</LocList>
+<BasicStmnt CovItemId="S1" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="19">
+<LocList>
+<Loc EndOffset="2293" SrcFileId="1" StartOffset="2278"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="876" HierarchyLvlTypeId="9" Intrnl_Id="20" Name="CSV">
+<Header>
+<Loc EndOffset="2709" SrcFileId="1" StartOffset="2658"/>
+</Header>
+<LocList>
+<Loc EndOffset="2810" SrcFileId="1" StartOffset="2658"/>
+</LocList>
+<StmntSeq Intrnl_Id="21">
+<LocList>
+<Loc EndOffset="2758" SrcFileId="1" StartOffset="2721"/>
+<Loc EndOffset="2803" SrcFileId="1" StartOffset="2768"/>
+</LocList>
+<BasicStmnt CovItemId="S2" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="22">
+<LocList>
+<Loc EndOffset="2758" SrcFileId="1" StartOffset="2721"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S3" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="23">
+<LocList>
+<Loc EndOffset="2803" SrcFileId="1" StartOffset="2768"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="877" HierarchyLvlTypeId="9" Intrnl_Id="24" Name="readCategoryDataset">
+<Header>
+<Loc EndOffset="3134" SrcFileId="1" StartOffset="3062"/>
+</Header>
+<LocList>
+<Loc EndOffset="3808" SrcFileId="1" StartOffset="3062"/>
+</LocList>
+<StmntSeq Intrnl_Id="25">
+<LocList>
+<Loc EndOffset="3210" SrcFileId="1" StartOffset="3148"/>
+<Loc EndOffset="3267" SrcFileId="1" StartOffset="3220"/>
+<Loc EndOffset="3300" SrcFileId="1" StartOffset="3277"/>
+<Loc EndOffset="3328" SrcFileId="1" StartOffset="3310"/>
+<Loc EndOffset="3370" SrcFileId="1" StartOffset="3338"/>
+<Loc EndOffset="3774" SrcFileId="1" StartOffset="3380"/>
+<Loc EndOffset="3799" SrcFileId="1" StartOffset="3784"/>
+</LocList>
+<BasicStmnt CovItemId="S4" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="26">
+<LocList>
+<Loc EndOffset="3210" SrcFileId="1" StartOffset="3148"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S5" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="27">
+<LocList>
+<Loc EndOffset="3267" SrcFileId="1" StartOffset="3220"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S6" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="28">
+<LocList>
+<Loc EndOffset="3300" SrcFileId="1" StartOffset="3277"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S7" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="29">
+<LocList>
+<Loc EndOffset="3328" SrcFileId="1" StartOffset="3310"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S8" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="30">
+<LocList>
+<Loc EndOffset="3370" SrcFileId="1" StartOffset="3338"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S9" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="31" MltplExecId="L1-2" MltplExecPrefix="org.jfree.data.io.CSV.java" NvrExecId="L1-0" NvrExecPrefix="org.jfree.data.io.CSV.java" OnceExecutedId="L1-1" OnceExecutedPrefix="org.jfree.data.io.CSV.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="32">
+<LocList>
+<Loc EndOffset="3698" SrcFileId="1" StartOffset="3416"/>
+<Loc EndOffset="3737" SrcFileId="1" StartOffset="3712"/>
+<Loc EndOffset="3763" SrcFileId="1" StartOffset="3751"/>
+</LocList>
+<CondStmnt CovItemId="S10" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="33">
+<Branch CovItemId="B1" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="34">
+<Cond/>
+<LocList>
+<Loc EndOffset="3543" SrcFileId="1" StartOffset="3436"/>
+</LocList>
+<StmntSeq Intrnl_Id="35">
+<LocList>
+<Loc EndOffset="3528" SrcFileId="1" StartOffset="3491"/>
+</LocList>
+<BasicStmnt CovItemId="S11" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="36">
+<LocList>
+<Loc EndOffset="3528" SrcFileId="1" StartOffset="3491"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B2" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="37">
+<Cond>
+<Loc EndOffset="3561" SrcFileId="1" StartOffset="3557"/>
+</Cond>
+<LocList>
+<Loc EndOffset="3698" SrcFileId="1" StartOffset="3562"/>
+</LocList>
+<StmntSeq Intrnl_Id="38">
+<LocList>
+<Loc EndOffset="3683" SrcFileId="1" StartOffset="3635"/>
+</LocList>
+<BasicStmnt CovItemId="S12" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="39">
+<LocList>
+<Loc EndOffset="3683" SrcFileId="1" StartOffset="3635"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="3418" SrcFileId="1" StartOffset="3416"/>
+<LocList>
+<Loc EndOffset="3698" SrcFileId="1" StartOffset="3416"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S13" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="40">
+<LocList>
+<Loc EndOffset="3737" SrcFileId="1" StartOffset="3712"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S14" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="41">
+<LocList>
+<Loc EndOffset="3763" SrcFileId="1" StartOffset="3751"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="3385" SrcFileId="1" StartOffset="3380"/>
+<LocList>
+<Loc EndOffset="3774" SrcFileId="1" StartOffset="3380"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S15" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="42">
+<LocList>
+<Loc EndOffset="3799" SrcFileId="1" StartOffset="3784"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="878" HierarchyLvlTypeId="9" Intrnl_Id="43" Name="extractColumnKeys">
+<Header>
+<Loc EndOffset="4029" SrcFileId="1" StartOffset="3986"/>
+</Header>
+<LocList>
+<Loc EndOffset="4747" SrcFileId="1" StartOffset="3986"/>
+</LocList>
+<StmntSeq Intrnl_Id="44">
+<LocList>
+<Loc EndOffset="4079" SrcFileId="1" StartOffset="4041"/>
+<Loc EndOffset="4108" SrcFileId="1" StartOffset="4089"/>
+<Loc EndOffset="4132" SrcFileId="1" StartOffset="4118"/>
+<Loc EndOffset="4610" SrcFileId="1" StartOffset="4142"/>
+<Loc EndOffset="4670" SrcFileId="1" StartOffset="4620"/>
+<Loc EndOffset="4718" SrcFileId="1" StartOffset="4680"/>
+<Loc EndOffset="4740" SrcFileId="1" StartOffset="4728"/>
+</LocList>
+<BasicStmnt CovItemId="S16" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="45">
+<LocList>
+<Loc EndOffset="4079" SrcFileId="1" StartOffset="4041"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S17" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="46">
+<LocList>
+<Loc EndOffset="4108" SrcFileId="1" StartOffset="4089"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S18" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="47">
+<LocList>
+<Loc EndOffset="4132" SrcFileId="1" StartOffset="4118"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S19" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="48" MltplExecId="L2-2" MltplExecPrefix="org.jfree.data.io.CSV.java" NvrExecId="L2-0" NvrExecPrefix="org.jfree.data.io.CSV.java" OnceExecutedId="L2-1" OnceExecutedPrefix="org.jfree.data.io.CSV.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="49">
+<LocList>
+<Loc EndOffset="4599" SrcFileId="1" StartOffset="4197"/>
+</LocList>
+<CondStmnt CovItemId="S20" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="50">
+<Branch CovItemId="B3" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="51">
+<Cond/>
+<LocList>
+<Loc EndOffset="4599" SrcFileId="1" StartOffset="4240"/>
+</LocList>
+<StmntSeq Intrnl_Id="52">
+<LocList>
+<Loc EndOffset="4521" SrcFileId="1" StartOffset="4259"/>
+<Loc EndOffset="4553" SrcFileId="1" StartOffset="4539"/>
+<Loc EndOffset="4584" SrcFileId="1" StartOffset="4571"/>
+</LocList>
+<CondStmnt CovItemId="S21" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="53">
+<Branch CovItemId="B5" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="54">
+<Cond/>
+<LocList>
+<Loc EndOffset="4521" SrcFileId="1" StartOffset="4279"/>
+</LocList>
+<StmntSeq Intrnl_Id="55">
+<LocList>
+<Loc EndOffset="4442" SrcFileId="1" StartOffset="4404"/>
+<Loc EndOffset="4502" SrcFileId="1" StartOffset="4464"/>
+</LocList>
+<BasicStmnt CovItemId="S22" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="56">
+<LocList>
+<Loc EndOffset="4442" SrcFileId="1" StartOffset="4404"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S23" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="57">
+<LocList>
+<Loc EndOffset="4502" SrcFileId="1" StartOffset="4464"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B6" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="true" Intrnl_Id="58">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="59">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="4261" SrcFileId="1" StartOffset="4259"/>
+<LocList>
+<Loc EndOffset="4521" SrcFileId="1" StartOffset="4259"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S24" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="60">
+<LocList>
+<Loc EndOffset="4553" SrcFileId="1" StartOffset="4539"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S25" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="61">
+<LocList>
+<Loc EndOffset="4584" SrcFileId="1" StartOffset="4571"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B4" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="true" Intrnl_Id="62">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="63">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="4199" SrcFileId="1" StartOffset="4197"/>
+<LocList>
+<Loc EndOffset="4599" SrcFileId="1" StartOffset="4197"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="4145" SrcFileId="1" StartOffset="4142"/>
+<LocList>
+<Loc EndOffset="4610" SrcFileId="1" StartOffset="4142"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S26" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="64">
+<LocList>
+<Loc EndOffset="4670" SrcFileId="1" StartOffset="4620"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S27" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="65">
+<LocList>
+<Loc EndOffset="4718" SrcFileId="1" StartOffset="4680"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S28" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="66">
+<LocList>
+<Loc EndOffset="4740" SrcFileId="1" StartOffset="4728"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="879" HierarchyLvlTypeId="9" Intrnl_Id="67" Name="extractRowKeyAndData">
+<Header>
+<Loc EndOffset="5183" SrcFileId="1" StartOffset="5010"/>
+</Header>
+<LocList>
+<Loc EndOffset="6331" SrcFileId="1" StartOffset="5010"/>
+</LocList>
+<StmntSeq Intrnl_Id="68">
+<LocList>
+<Loc EndOffset="5220" SrcFileId="1" StartOffset="5195"/>
+<Loc EndOffset="5249" SrcFileId="1" StartOffset="5230"/>
+<Loc EndOffset="5273" SrcFileId="1" StartOffset="5259"/>
+<Loc EndOffset="6087" SrcFileId="1" StartOffset="5283"/>
+<Loc EndOffset="6213" SrcFileId="1" StartOffset="6097"/>
+<Loc EndOffset="6324" SrcFileId="1" StartOffset="6223"/>
+</LocList>
+<BasicStmnt CovItemId="S29" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="69">
+<LocList>
+<Loc EndOffset="5220" SrcFileId="1" StartOffset="5195"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S30" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="70">
+<LocList>
+<Loc EndOffset="5249" SrcFileId="1" StartOffset="5230"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S31" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="71">
+<LocList>
+<Loc EndOffset="5273" SrcFileId="1" StartOffset="5259"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S32" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="72" MltplExecId="L3-2" MltplExecPrefix="org.jfree.data.io.CSV.java" NvrExecId="L3-0" NvrExecPrefix="org.jfree.data.io.CSV.java" OnceExecutedId="L3-1" OnceExecutedPrefix="org.jfree.data.io.CSV.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="73">
+<LocList>
+<Loc EndOffset="6076" SrcFileId="1" StartOffset="5338"/>
+</LocList>
+<CondStmnt CovItemId="S33" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="74">
+<Branch CovItemId="B7" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="75">
+<Cond/>
+<LocList>
+<Loc EndOffset="6076" SrcFileId="1" StartOffset="5381"/>
+</LocList>
+<StmntSeq Intrnl_Id="76">
+<LocList>
+<Loc EndOffset="5998" SrcFileId="1" StartOffset="5400"/>
+<Loc EndOffset="6030" SrcFileId="1" StartOffset="6016"/>
+<Loc EndOffset="6061" SrcFileId="1" StartOffset="6048"/>
+</LocList>
+<CondStmnt CovItemId="S34" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="77">
+<Branch CovItemId="B9" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="78">
+<Cond/>
+<LocList>
+<Loc EndOffset="5597" SrcFileId="1" StartOffset="5421"/>
+</LocList>
+<StmntSeq Intrnl_Id="79">
+<LocList>
+<Loc EndOffset="5519" SrcFileId="1" StartOffset="5481"/>
+<Loc EndOffset="5578" SrcFileId="1" StartOffset="5541"/>
+</LocList>
+<BasicStmnt CovItemId="S35" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="80">
+<LocList>
+<Loc EndOffset="5519" SrcFileId="1" StartOffset="5481"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S36" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="81">
+<LocList>
+<Loc EndOffset="5578" SrcFileId="1" StartOffset="5541"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B10" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="82">
+<Cond>
+<Loc EndOffset="5619" SrcFileId="1" StartOffset="5615"/>
+</Cond>
+<LocList>
+<Loc EndOffset="5998" SrcFileId="1" StartOffset="5620"/>
+</LocList>
+<StmntSeq Intrnl_Id="83">
+<LocList>
+<Loc EndOffset="5807" SrcFileId="1" StartOffset="5679"/>
+<Loc EndOffset="5979" SrcFileId="1" StartOffset="5829"/>
+</LocList>
+<BasicStmnt CovItemId="S37" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="84">
+<LocList>
+<Loc EndOffset="5807" SrcFileId="1" StartOffset="5679"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S38" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="85">
+<LocList>
+<Loc EndOffset="5979" SrcFileId="1" StartOffset="5829"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="5402" SrcFileId="1" StartOffset="5400"/>
+<LocList>
+<Loc EndOffset="5998" SrcFileId="1" StartOffset="5400"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S39" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="86">
+<LocList>
+<Loc EndOffset="6030" SrcFileId="1" StartOffset="6016"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S40" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="87">
+<LocList>
+<Loc EndOffset="6061" SrcFileId="1" StartOffset="6048"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B8" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="true" Intrnl_Id="88">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="89">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="5340" SrcFileId="1" StartOffset="5338"/>
+<LocList>
+<Loc EndOffset="6076" SrcFileId="1" StartOffset="5338"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="5286" SrcFileId="1" StartOffset="5283"/>
+<LocList>
+<Loc EndOffset="6087" SrcFileId="1" StartOffset="5283"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S41" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="90">
+<LocList>
+<Loc EndOffset="6213" SrcFileId="1" StartOffset="6097"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S42" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="91">
+<LocList>
+<Loc EndOffset="6324" SrcFileId="1" StartOffset="6223"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="880" HierarchyLvlTypeId="9" Intrnl_Id="92" Name="removeStringDelimiters">
+<Header>
+<Loc EndOffset="6628" SrcFileId="1" StartOffset="6579"/>
+</Header>
+<LocList>
+<Loc EndOffset="6905" SrcFileId="1" StartOffset="6579"/>
+</LocList>
+<StmntSeq Intrnl_Id="93">
+<LocList>
+<Loc EndOffset="6662" SrcFileId="1" StartOffset="6640"/>
+<Loc EndOffset="6756" SrcFileId="1" StartOffset="6672"/>
+<Loc EndOffset="6879" SrcFileId="1" StartOffset="6766"/>
+<Loc EndOffset="6898" SrcFileId="1" StartOffset="6889"/>
+</LocList>
+<BasicStmnt CovItemId="S43" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="94">
+<LocList>
+<Loc EndOffset="6662" SrcFileId="1" StartOffset="6640"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S44" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="95">
+<Branch CovItemId="B11" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="96">
+<Cond/>
+<LocList>
+<Loc EndOffset="6756" SrcFileId="1" StartOffset="6711"/>
+</LocList>
+<StmntSeq Intrnl_Id="97">
+<LocList>
+<Loc EndOffset="6745" SrcFileId="1" StartOffset="6726"/>
+</LocList>
+<BasicStmnt CovItemId="S45" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="98">
+<LocList>
+<Loc EndOffset="6745" SrcFileId="1" StartOffset="6726"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B12" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="true" Intrnl_Id="99">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="100">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="6674" SrcFileId="1" StartOffset="6672"/>
+<LocList>
+<Loc EndOffset="6756" SrcFileId="1" StartOffset="6672"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S46" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="101">
+<Branch CovItemId="B13" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="false" Intrnl_Id="102">
+<Cond/>
+<LocList>
+<Loc EndOffset="6879" SrcFileId="1" StartOffset="6818"/>
+</LocList>
+<StmntSeq Intrnl_Id="103">
+<LocList>
+<Loc EndOffset="6868" SrcFileId="1" StartOffset="6833"/>
+</LocList>
+<BasicStmnt CovItemId="S47" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="104">
+<LocList>
+<Loc EndOffset="6868" SrcFileId="1" StartOffset="6833"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B14" CovItemPrefix="org.jfree.data.io.CSV.java" Implct="true" Intrnl_Id="105">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="106">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="6768" SrcFileId="1" StartOffset="6766"/>
+<LocList>
+<Loc EndOffset="6879" SrcFileId="1" StartOffset="6766"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S48" CovItemPrefix="org.jfree.data.io.CSV.java" Intrnl_Id="107">
+<LocList>
+<Loc EndOffset="6898" SrcFileId="1" StartOffset="6889"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+</HierarchyLvl>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="905" HierarchyLvlTypeId="8" Intrnl_Id="108" Name="Range">
+<Header>
+<Loc EndOffset="3126" SrcFileId="2" StartOffset="3075"/>
+</Header>
+<LocList>
+<Loc EndOffset="15343" SrcFileId="2" StartOffset="3075"/>
+</LocList>
+<StmntSeq Intrnl_Id="109">
+<LocList>
+<Loc EndOffset="3233" SrcFileId="2" StartOffset="3167"/>
+</LocList>
+<BasicStmnt CovItemId="S1" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="110">
+<LocList>
+<Loc EndOffset="3233" SrcFileId="2" StartOffset="3167"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<HierarchyLvl HierarchyLvlId="882" HierarchyLvlTypeId="9" Intrnl_Id="111" Name="Range">
+<Header>
+<Loc EndOffset="3612" SrcFileId="2" StartOffset="3572"/>
+</Header>
+<LocList>
+<Loc EndOffset="3899" SrcFileId="2" StartOffset="3572"/>
+</LocList>
+<StmntSeq Intrnl_Id="112">
+<LocList>
+<Loc EndOffset="3834" SrcFileId="2" StartOffset="3624"/>
+<Loc EndOffset="3863" SrcFileId="2" StartOffset="3844"/>
+<Loc EndOffset="3892" SrcFileId="2" StartOffset="3873"/>
+</LocList>
+<CondStmnt CovItemId="S2" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="113">
+<Branch CovItemId="B1" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="114">
+<Cond/>
+<LocList>
+<Loc EndOffset="3834" SrcFileId="2" StartOffset="3643"/>
+</LocList>
+<StmntSeq Intrnl_Id="115">
+<LocList>
+<Loc EndOffset="3769" SrcFileId="2" StartOffset="3658"/>
+<Loc EndOffset="3823" SrcFileId="2" StartOffset="3783"/>
+</LocList>
+<BasicStmnt CovItemId="S3" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="116">
+<LocList>
+<Loc EndOffset="3769" SrcFileId="2" StartOffset="3658"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S4" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="117">
+<LocList>
+<Loc EndOffset="3823" SrcFileId="2" StartOffset="3783"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B2" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="118">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="119">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="3626" SrcFileId="2" StartOffset="3624"/>
+<LocList>
+<Loc EndOffset="3834" SrcFileId="2" StartOffset="3624"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S5" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="120">
+<LocList>
+<Loc EndOffset="3863" SrcFileId="2" StartOffset="3844"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S6" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="121">
+<LocList>
+<Loc EndOffset="3892" SrcFileId="2" StartOffset="3873"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="883" HierarchyLvlTypeId="9" Intrnl_Id="122" Name="getLowerBound">
+<Header>
+<Loc EndOffset="4042" SrcFileId="2" StartOffset="4013"/>
+</Header>
+<LocList>
+<Loc EndOffset="4079" SrcFileId="2" StartOffset="4013"/>
+</LocList>
+<StmntSeq Intrnl_Id="123">
+<LocList>
+<Loc EndOffset="4072" SrcFileId="2" StartOffset="4054"/>
+</LocList>
+<BasicStmnt CovItemId="S7" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="124">
+<LocList>
+<Loc EndOffset="4072" SrcFileId="2" StartOffset="4054"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="884" HierarchyLvlTypeId="9" Intrnl_Id="125" Name="getUpperBound">
+<Header>
+<Loc EndOffset="4222" SrcFileId="2" StartOffset="4193"/>
+</Header>
+<LocList>
+<Loc EndOffset="4259" SrcFileId="2" StartOffset="4193"/>
+</LocList>
+<StmntSeq Intrnl_Id="126">
+<LocList>
+<Loc EndOffset="4252" SrcFileId="2" StartOffset="4234"/>
+</LocList>
+<BasicStmnt CovItemId="S8" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="127">
+<LocList>
+<Loc EndOffset="4252" SrcFileId="2" StartOffset="4234"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="885" HierarchyLvlTypeId="9" Intrnl_Id="128" Name="getLength">
+<Header>
+<Loc EndOffset="4387" SrcFileId="2" StartOffset="4362"/>
+</Header>
+<LocList>
+<Loc EndOffset="4437" SrcFileId="2" StartOffset="4362"/>
+</LocList>
+<StmntSeq Intrnl_Id="129">
+<LocList>
+<Loc EndOffset="4430" SrcFileId="2" StartOffset="4399"/>
+</LocList>
+<BasicStmnt CovItemId="S9" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="130">
+<LocList>
+<Loc EndOffset="4430" SrcFileId="2" StartOffset="4399"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="886" HierarchyLvlTypeId="9" Intrnl_Id="131" Name="getCentralValue">
+<Header>
+<Loc EndOffset="4586" SrcFileId="2" StartOffset="4555"/>
+</Header>
+<LocList>
+<Loc EndOffset="4648" SrcFileId="2" StartOffset="4555"/>
+</LocList>
+<StmntSeq Intrnl_Id="132">
+<LocList>
+<Loc EndOffset="4641" SrcFileId="2" StartOffset="4598"/>
+</LocList>
+<BasicStmnt CovItemId="S10" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="133">
+<LocList>
+<Loc EndOffset="4641" SrcFileId="2" StartOffset="4598"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="887" HierarchyLvlTypeId="9" Intrnl_Id="134" Name="contains">
+<Header>
+<Loc EndOffset="4965" SrcFileId="2" StartOffset="4928"/>
+</Header>
+<LocList>
+<Loc EndOffset="5036" SrcFileId="2" StartOffset="4928"/>
+</LocList>
+<StmntSeq Intrnl_Id="135">
+<LocList>
+<Loc EndOffset="5029" SrcFileId="2" StartOffset="4977"/>
+</LocList>
+<BasicStmnt CovItemId="S11" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="136">
+<LocList>
+<Loc EndOffset="5029" SrcFileId="2" StartOffset="4977"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="888" HierarchyLvlTypeId="9" Intrnl_Id="137" Name="intersects">
+<Header>
+<Loc EndOffset="5392" SrcFileId="2" StartOffset="5345"/>
+</Header>
+<LocList>
+<Loc EndOffset="5562" SrcFileId="2" StartOffset="5345"/>
+</LocList>
+<StmntSeq Intrnl_Id="138">
+<LocList>
+<Loc EndOffset="5555" SrcFileId="2" StartOffset="5404"/>
+</LocList>
+<CondStmnt CovItemId="S12" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="139">
+<Branch CovItemId="B3" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="140">
+<Cond/>
+<LocList>
+<Loc EndOffset="5477" SrcFileId="2" StartOffset="5426"/>
+</LocList>
+<StmntSeq Intrnl_Id="141">
+<LocList>
+<Loc EndOffset="5466" SrcFileId="2" StartOffset="5441"/>
+</LocList>
+<BasicStmnt CovItemId="S13" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="142">
+<LocList>
+<Loc EndOffset="5466" SrcFileId="2" StartOffset="5441"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B4" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="143">
+<Cond>
+<Loc EndOffset="5491" SrcFileId="2" StartOffset="5487"/>
+</Cond>
+<LocList>
+<Loc EndOffset="5555" SrcFileId="2" StartOffset="5492"/>
+</LocList>
+<StmntSeq Intrnl_Id="144">
+<LocList>
+<Loc EndOffset="5544" SrcFileId="2" StartOffset="5507"/>
+</LocList>
+<BasicStmnt CovItemId="S14" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="145">
+<LocList>
+<Loc EndOffset="5544" SrcFileId="2" StartOffset="5507"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="5406" SrcFileId="2" StartOffset="5404"/>
+<LocList>
+<Loc EndOffset="5555" SrcFileId="2" StartOffset="5404"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="889" HierarchyLvlTypeId="9" Intrnl_Id="146" Name="intersects">
+<Header>
+<Loc EndOffset="5895" SrcFileId="2" StartOffset="5857"/>
+</Header>
+<LocList>
+<Loc EndOffset="5978" SrcFileId="2" StartOffset="5857"/>
+</LocList>
+<StmntSeq Intrnl_Id="147">
+<LocList>
+<Loc EndOffset="5971" SrcFileId="2" StartOffset="5907"/>
+</LocList>
+<BasicStmnt CovItemId="S15" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="148">
+<LocList>
+<Loc EndOffset="5971" SrcFileId="2" StartOffset="5907"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="890" HierarchyLvlTypeId="9" Intrnl_Id="149" Name="constrain">
+<Header>
+<Loc EndOffset="6220" SrcFileId="2" StartOffset="6183"/>
+</Header>
+<LocList>
+<Loc EndOffset="6518" SrcFileId="2" StartOffset="6183"/>
+</LocList>
+<StmntSeq Intrnl_Id="150">
+<LocList>
+<Loc EndOffset="6254" SrcFileId="2" StartOffset="6232"/>
+<Loc EndOffset="6487" SrcFileId="2" StartOffset="6264"/>
+<Loc EndOffset="6511" SrcFileId="2" StartOffset="6497"/>
+</LocList>
+<BasicStmnt CovItemId="S16" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="151">
+<LocList>
+<Loc EndOffset="6254" SrcFileId="2" StartOffset="6232"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S17" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="152">
+<Branch CovItemId="B5" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="153">
+<Cond/>
+<LocList>
+<Loc EndOffset="6487" SrcFileId="2" StartOffset="6286"/>
+</LocList>
+<StmntSeq Intrnl_Id="154">
+<LocList>
+<Loc EndOffset="6476" SrcFileId="2" StartOffset="6301"/>
+</LocList>
+<CondStmnt CovItemId="S18" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="155">
+<Branch CovItemId="B7" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="156">
+<Cond/>
+<LocList>
+<Loc EndOffset="6379" SrcFileId="2" StartOffset="6325"/>
+</LocList>
+<StmntSeq Intrnl_Id="157">
+<LocList>
+<Loc EndOffset="6364" SrcFileId="2" StartOffset="6344"/>
+</LocList>
+<BasicStmnt CovItemId="S19" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="158">
+<LocList>
+<Loc EndOffset="6364" SrcFileId="2" StartOffset="6344"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B8" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="159">
+<Cond>
+<Loc EndOffset="6397" SrcFileId="2" StartOffset="6393"/>
+</Cond>
+<LocList>
+<Loc EndOffset="6476" SrcFileId="2" StartOffset="6398"/>
+</LocList>
+<StmntSeq Intrnl_Id="160">
+<LocList>
+<Loc EndOffset="6476" SrcFileId="2" StartOffset="6398"/>
+</LocList>
+<CondStmnt CovItemId="S20" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="161">
+<Branch CovItemId="B9" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="162">
+<Cond/>
+<LocList>
+<Loc EndOffset="6476" SrcFileId="2" StartOffset="6422"/>
+</LocList>
+<StmntSeq Intrnl_Id="163">
+<LocList>
+<Loc EndOffset="6461" SrcFileId="2" StartOffset="6441"/>
+</LocList>
+<BasicStmnt CovItemId="S21" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="164">
+<LocList>
+<Loc EndOffset="6461" SrcFileId="2" StartOffset="6441"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B10" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="165">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="166">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="6400" SrcFileId="2" StartOffset="6398"/>
+<LocList>
+<Loc EndOffset="6476" SrcFileId="2" StartOffset="6398"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="6303" SrcFileId="2" StartOffset="6301"/>
+<LocList>
+<Loc EndOffset="6476" SrcFileId="2" StartOffset="6301"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B6" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="167">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="168">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="6266" SrcFileId="2" StartOffset="6264"/>
+<LocList>
+<Loc EndOffset="6487" SrcFileId="2" StartOffset="6264"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S22" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="169">
+<LocList>
+<Loc EndOffset="6511" SrcFileId="2" StartOffset="6497"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="891" HierarchyLvlTypeId="9" Intrnl_Id="170" Name="combine">
+<Header>
+<Loc EndOffset="7158" SrcFileId="2" StartOffset="7103"/>
+</Header>
+<LocList>
+<Loc EndOffset="7496" SrcFileId="2" StartOffset="7103"/>
+</LocList>
+<StmntSeq Intrnl_Id="171">
+<LocList>
+<Loc EndOffset="7230" SrcFileId="2" StartOffset="7170"/>
+<Loc EndOffset="7300" SrcFileId="2" StartOffset="7240"/>
+<Loc EndOffset="7378" SrcFileId="2" StartOffset="7310"/>
+<Loc EndOffset="7456" SrcFileId="2" StartOffset="7388"/>
+<Loc EndOffset="7489" SrcFileId="2" StartOffset="7466"/>
+</LocList>
+<CondStmnt CovItemId="S23" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="172">
+<Branch CovItemId="B11" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="173">
+<Cond/>
+<LocList>
+<Loc EndOffset="7230" SrcFileId="2" StartOffset="7190"/>
+</LocList>
+<StmntSeq Intrnl_Id="174">
+<LocList>
+<Loc EndOffset="7219" SrcFileId="2" StartOffset="7205"/>
+</LocList>
+<BasicStmnt CovItemId="S24" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="175">
+<LocList>
+<Loc EndOffset="7219" SrcFileId="2" StartOffset="7205"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B12" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="176">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="177">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="7172" SrcFileId="2" StartOffset="7170"/>
+<LocList>
+<Loc EndOffset="7230" SrcFileId="2" StartOffset="7170"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S25" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="178">
+<Branch CovItemId="B13" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="179">
+<Cond/>
+<LocList>
+<Loc EndOffset="7300" SrcFileId="2" StartOffset="7260"/>
+</LocList>
+<StmntSeq Intrnl_Id="180">
+<LocList>
+<Loc EndOffset="7289" SrcFileId="2" StartOffset="7275"/>
+</LocList>
+<BasicStmnt CovItemId="S26" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="181">
+<LocList>
+<Loc EndOffset="7289" SrcFileId="2" StartOffset="7275"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B14" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="182">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="183">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="7242" SrcFileId="2" StartOffset="7240"/>
+<LocList>
+<Loc EndOffset="7300" SrcFileId="2" StartOffset="7240"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S27" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="184">
+<LocList>
+<Loc EndOffset="7378" SrcFileId="2" StartOffset="7310"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S28" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="185">
+<LocList>
+<Loc EndOffset="7456" SrcFileId="2" StartOffset="7388"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S29" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="186">
+<LocList>
+<Loc EndOffset="7489" SrcFileId="2" StartOffset="7466"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="892" HierarchyLvlTypeId="9" Intrnl_Id="187" Name="combineIgnoringNaN">
+<Header>
+<Loc EndOffset="8004" SrcFileId="2" StartOffset="7938"/>
+</Header>
+<LocList>
+<Loc EndOffset="8608" SrcFileId="2" StartOffset="7938"/>
+</LocList>
+<StmntSeq Intrnl_Id="188">
+<LocList>
+<Loc EndOffset="8179" SrcFileId="2" StartOffset="8016"/>
+<Loc EndOffset="8334" SrcFileId="2" StartOffset="8189"/>
+<Loc EndOffset="8407" SrcFileId="2" StartOffset="8344"/>
+<Loc EndOffset="8480" SrcFileId="2" StartOffset="8417"/>
+<Loc EndOffset="8568" SrcFileId="2" StartOffset="8490"/>
+<Loc EndOffset="8601" SrcFileId="2" StartOffset="8578"/>
+</LocList>
+<CondStmnt CovItemId="S30" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="189">
+<Branch CovItemId="B15" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="190">
+<Cond/>
+<LocList>
+<Loc EndOffset="8179" SrcFileId="2" StartOffset="8036"/>
+</LocList>
+<StmntSeq Intrnl_Id="191">
+<LocList>
+<Loc EndOffset="8140" SrcFileId="2" StartOffset="8051"/>
+<Loc EndOffset="8168" SrcFileId="2" StartOffset="8154"/>
+</LocList>
+<CondStmnt CovItemId="S31" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="192">
+<Branch CovItemId="B17" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="193">
+<Cond/>
+<LocList>
+<Loc EndOffset="8140" SrcFileId="2" StartOffset="8094"/>
+</LocList>
+<StmntSeq Intrnl_Id="194">
+<LocList>
+<Loc EndOffset="8125" SrcFileId="2" StartOffset="8113"/>
+</LocList>
+<BasicStmnt CovItemId="S32" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="195">
+<LocList>
+<Loc EndOffset="8125" SrcFileId="2" StartOffset="8113"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B18" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="196">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="197">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="8053" SrcFileId="2" StartOffset="8051"/>
+<LocList>
+<Loc EndOffset="8140" SrcFileId="2" StartOffset="8051"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S33" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="198">
+<LocList>
+<Loc EndOffset="8168" SrcFileId="2" StartOffset="8154"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B16" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="199">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="200">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="8018" SrcFileId="2" StartOffset="8016"/>
+<LocList>
+<Loc EndOffset="8179" SrcFileId="2" StartOffset="8016"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S34" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="201">
+<Branch CovItemId="B19" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="202">
+<Cond/>
+<LocList>
+<Loc EndOffset="8334" SrcFileId="2" StartOffset="8209"/>
+</LocList>
+<StmntSeq Intrnl_Id="203">
+<LocList>
+<Loc EndOffset="8295" SrcFileId="2" StartOffset="8224"/>
+<Loc EndOffset="8323" SrcFileId="2" StartOffset="8309"/>
+</LocList>
+<CondStmnt CovItemId="S35" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="204">
+<Branch CovItemId="B21" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="205">
+<Cond/>
+<LocList>
+<Loc EndOffset="8295" SrcFileId="2" StartOffset="8249"/>
+</LocList>
+<StmntSeq Intrnl_Id="206">
+<LocList>
+<Loc EndOffset="8280" SrcFileId="2" StartOffset="8268"/>
+</LocList>
+<BasicStmnt CovItemId="S36" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="207">
+<LocList>
+<Loc EndOffset="8280" SrcFileId="2" StartOffset="8268"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B22" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="208">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="209">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="8226" SrcFileId="2" StartOffset="8224"/>
+<LocList>
+<Loc EndOffset="8295" SrcFileId="2" StartOffset="8224"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S37" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="210">
+<LocList>
+<Loc EndOffset="8323" SrcFileId="2" StartOffset="8309"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B20" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="211">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="212">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="8191" SrcFileId="2" StartOffset="8189"/>
+<LocList>
+<Loc EndOffset="8334" SrcFileId="2" StartOffset="8189"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S38" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="213">
+<LocList>
+<Loc EndOffset="8407" SrcFileId="2" StartOffset="8344"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S39" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="214">
+<LocList>
+<Loc EndOffset="8480" SrcFileId="2" StartOffset="8417"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S40" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="215">
+<Branch CovItemId="B23" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="216">
+<Cond/>
+<LocList>
+<Loc EndOffset="8568" SrcFileId="2" StartOffset="8530"/>
+</LocList>
+<StmntSeq Intrnl_Id="217">
+<LocList>
+<Loc EndOffset="8557" SrcFileId="2" StartOffset="8545"/>
+</LocList>
+<BasicStmnt CovItemId="S41" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="218">
+<LocList>
+<Loc EndOffset="8557" SrcFileId="2" StartOffset="8545"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B24" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="219">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="220">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="8492" SrcFileId="2" StartOffset="8490"/>
+<LocList>
+<Loc EndOffset="8568" SrcFileId="2" StartOffset="8490"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S42" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="221">
+<LocList>
+<Loc EndOffset="8601" SrcFileId="2" StartOffset="8578"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="893" HierarchyLvlTypeId="9" Intrnl_Id="222" Name="min">
+<Header>
+<Loc EndOffset="8940" SrcFileId="2" StartOffset="8893"/>
+</Header>
+<LocList>
+<Loc EndOffset="9119" SrcFileId="2" StartOffset="8893"/>
+</LocList>
+<StmntSeq Intrnl_Id="223">
+<LocList>
+<Loc EndOffset="9010" SrcFileId="2" StartOffset="8952"/>
+<Loc EndOffset="9078" SrcFileId="2" StartOffset="9020"/>
+<Loc EndOffset="9112" SrcFileId="2" StartOffset="9088"/>
+</LocList>
+<CondStmnt CovItemId="S43" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="224">
+<Branch CovItemId="B25" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="225">
+<Cond/>
+<LocList>
+<Loc EndOffset="9010" SrcFileId="2" StartOffset="8974"/>
+</LocList>
+<StmntSeq Intrnl_Id="226">
+<LocList>
+<Loc EndOffset="8999" SrcFileId="2" StartOffset="8989"/>
+</LocList>
+<BasicStmnt CovItemId="S44" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="227">
+<LocList>
+<Loc EndOffset="8999" SrcFileId="2" StartOffset="8989"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B26" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="228">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="229">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="8954" SrcFileId="2" StartOffset="8952"/>
+<LocList>
+<Loc EndOffset="9010" SrcFileId="2" StartOffset="8952"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S45" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="230">
+<Branch CovItemId="B27" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="231">
+<Cond/>
+<LocList>
+<Loc EndOffset="9078" SrcFileId="2" StartOffset="9042"/>
+</LocList>
+<StmntSeq Intrnl_Id="232">
+<LocList>
+<Loc EndOffset="9067" SrcFileId="2" StartOffset="9057"/>
+</LocList>
+<BasicStmnt CovItemId="S46" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="233">
+<LocList>
+<Loc EndOffset="9067" SrcFileId="2" StartOffset="9057"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B28" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="234">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="235">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="9022" SrcFileId="2" StartOffset="9020"/>
+<LocList>
+<Loc EndOffset="9078" SrcFileId="2" StartOffset="9020"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S47" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="236">
+<LocList>
+<Loc EndOffset="9112" SrcFileId="2" StartOffset="9088"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="894" HierarchyLvlTypeId="9" Intrnl_Id="237" Name="max">
+<Header>
+<Loc EndOffset="9174" SrcFileId="2" StartOffset="9127"/>
+</Header>
+<LocList>
+<Loc EndOffset="9353" SrcFileId="2" StartOffset="9127"/>
+</LocList>
+<StmntSeq Intrnl_Id="238">
+<LocList>
+<Loc EndOffset="9244" SrcFileId="2" StartOffset="9186"/>
+<Loc EndOffset="9312" SrcFileId="2" StartOffset="9254"/>
+<Loc EndOffset="9346" SrcFileId="2" StartOffset="9322"/>
+</LocList>
+<CondStmnt CovItemId="S48" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="239">
+<Branch CovItemId="B29" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="240">
+<Cond/>
+<LocList>
+<Loc EndOffset="9244" SrcFileId="2" StartOffset="9208"/>
+</LocList>
+<StmntSeq Intrnl_Id="241">
+<LocList>
+<Loc EndOffset="9233" SrcFileId="2" StartOffset="9223"/>
+</LocList>
+<BasicStmnt CovItemId="S49" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="242">
+<LocList>
+<Loc EndOffset="9233" SrcFileId="2" StartOffset="9223"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B30" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="243">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="244">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="9188" SrcFileId="2" StartOffset="9186"/>
+<LocList>
+<Loc EndOffset="9244" SrcFileId="2" StartOffset="9186"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S50" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="245">
+<Branch CovItemId="B31" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="246">
+<Cond/>
+<LocList>
+<Loc EndOffset="9312" SrcFileId="2" StartOffset="9276"/>
+</LocList>
+<StmntSeq Intrnl_Id="247">
+<LocList>
+<Loc EndOffset="9301" SrcFileId="2" StartOffset="9291"/>
+</LocList>
+<BasicStmnt CovItemId="S51" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="248">
+<LocList>
+<Loc EndOffset="9301" SrcFileId="2" StartOffset="9291"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B32" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="249">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="250">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="9256" SrcFileId="2" StartOffset="9254"/>
+<LocList>
+<Loc EndOffset="9312" SrcFileId="2" StartOffset="9254"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S52" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="251">
+<LocList>
+<Loc EndOffset="9346" SrcFileId="2" StartOffset="9322"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="895" HierarchyLvlTypeId="9" Intrnl_Id="252" Name="expandToInclude">
+<Header>
+<Loc EndOffset="9764" SrcFileId="2" StartOffset="9702"/>
+</Header>
+<LocList>
+<Loc EndOffset="10154" SrcFileId="2" StartOffset="9702"/>
+</LocList>
+<StmntSeq Intrnl_Id="253">
+<LocList>
+<Loc EndOffset="9852" SrcFileId="2" StartOffset="9776"/>
+<Loc EndOffset="10147" SrcFileId="2" StartOffset="9862"/>
+</LocList>
+<CondStmnt CovItemId="S53" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="254">
+<Branch CovItemId="B33" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="255">
+<Cond/>
+<LocList>
+<Loc EndOffset="9852" SrcFileId="2" StartOffset="9795"/>
+</LocList>
+<StmntSeq Intrnl_Id="256">
+<LocList>
+<Loc EndOffset="9841" SrcFileId="2" StartOffset="9810"/>
+</LocList>
+<BasicStmnt CovItemId="S54" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="257">
+<LocList>
+<Loc EndOffset="9841" SrcFileId="2" StartOffset="9810"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B34" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="258">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="259">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="9778" SrcFileId="2" StartOffset="9776"/>
+<LocList>
+<Loc EndOffset="9852" SrcFileId="2" StartOffset="9776"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S55" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="260">
+<Branch CovItemId="B35" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="261">
+<Cond/>
+<LocList>
+<Loc EndOffset="9970" SrcFileId="2" StartOffset="9897"/>
+</LocList>
+<StmntSeq Intrnl_Id="262">
+<LocList>
+<Loc EndOffset="9959" SrcFileId="2" StartOffset="9912"/>
+</LocList>
+<BasicStmnt CovItemId="S56" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="263">
+<LocList>
+<Loc EndOffset="9959" SrcFileId="2" StartOffset="9912"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B36" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="264">
+<Cond>
+<Loc EndOffset="9984" SrcFileId="2" StartOffset="9980"/>
+</Cond>
+<LocList>
+<Loc EndOffset="10147" SrcFileId="2" StartOffset="9985"/>
+</LocList>
+<StmntSeq Intrnl_Id="265">
+<LocList>
+<Loc EndOffset="10147" SrcFileId="2" StartOffset="9985"/>
+</LocList>
+<CondStmnt CovItemId="S57" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="266">
+<Branch CovItemId="B37" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="267">
+<Cond/>
+<LocList>
+<Loc EndOffset="10093" SrcFileId="2" StartOffset="10020"/>
+</LocList>
+<StmntSeq Intrnl_Id="268">
+<LocList>
+<Loc EndOffset="10082" SrcFileId="2" StartOffset="10035"/>
+</LocList>
+<BasicStmnt CovItemId="S58" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="269">
+<LocList>
+<Loc EndOffset="10082" SrcFileId="2" StartOffset="10035"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B38" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="270">
+<Cond>
+<Loc EndOffset="10107" SrcFileId="2" StartOffset="10103"/>
+</Cond>
+<LocList>
+<Loc EndOffset="10147" SrcFileId="2" StartOffset="10108"/>
+</LocList>
+<StmntSeq Intrnl_Id="271">
+<LocList>
+<Loc EndOffset="10136" SrcFileId="2" StartOffset="10123"/>
+</LocList>
+<BasicStmnt CovItemId="S59" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="272">
+<LocList>
+<Loc EndOffset="10136" SrcFileId="2" StartOffset="10123"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="9987" SrcFileId="2" StartOffset="9985"/>
+<LocList>
+<Loc EndOffset="10147" SrcFileId="2" StartOffset="9985"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="9864" SrcFileId="2" StartOffset="9862"/>
+<LocList>
+<Loc EndOffset="10147" SrcFileId="2" StartOffset="9862"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="896" HierarchyLvlTypeId="9" Intrnl_Id="273" Name="expand">
+<Header>
+<Loc EndOffset="10722" SrcFileId="2" StartOffset="10611"/>
+</Header>
+<LocList>
+<Loc EndOffset="11128" SrcFileId="2" StartOffset="10611"/>
+</LocList>
+<StmntSeq Intrnl_Id="274">
+<LocList>
+<Loc EndOffset="10779" SrcFileId="2" StartOffset="10734"/>
+<Loc EndOffset="10823" SrcFileId="2" StartOffset="10789"/>
+<Loc EndOffset="10893" SrcFileId="2" StartOffset="10833"/>
+<Loc EndOffset="10963" SrcFileId="2" StartOffset="10903"/>
+<Loc EndOffset="11080" SrcFileId="2" StartOffset="10973"/>
+<Loc EndOffset="11121" SrcFileId="2" StartOffset="11090"/>
+</LocList>
+<BasicStmnt CovItemId="S60" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="275">
+<LocList>
+<Loc EndOffset="10779" SrcFileId="2" StartOffset="10734"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S61" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="276">
+<LocList>
+<Loc EndOffset="10823" SrcFileId="2" StartOffset="10789"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S62" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="277">
+<LocList>
+<Loc EndOffset="10893" SrcFileId="2" StartOffset="10833"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S63" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="278">
+<LocList>
+<Loc EndOffset="10963" SrcFileId="2" StartOffset="10903"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S64" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="279">
+<Branch CovItemId="B39" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="280">
+<Cond/>
+<LocList>
+<Loc EndOffset="11080" SrcFileId="2" StartOffset="10992"/>
+</LocList>
+<StmntSeq Intrnl_Id="281">
+<LocList>
+<Loc EndOffset="11041" SrcFileId="2" StartOffset="11007"/>
+<Loc EndOffset="11069" SrcFileId="2" StartOffset="11055"/>
+</LocList>
+<BasicStmnt CovItemId="S65" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="282">
+<LocList>
+<Loc EndOffset="11041" SrcFileId="2" StartOffset="11007"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S66" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="283">
+<LocList>
+<Loc EndOffset="11069" SrcFileId="2" StartOffset="11055"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B40" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="284">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="285">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="10975" SrcFileId="2" StartOffset="10973"/>
+<LocList>
+<Loc EndOffset="11080" SrcFileId="2" StartOffset="10973"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S67" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="286">
+<LocList>
+<Loc EndOffset="11121" SrcFileId="2" StartOffset="11090"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="897" HierarchyLvlTypeId="9" Intrnl_Id="287" Name="shift">
+<Header>
+<Loc EndOffset="11411" SrcFileId="2" StartOffset="11360"/>
+</Header>
+<LocList>
+<Loc EndOffset="11463" SrcFileId="2" StartOffset="11360"/>
+</LocList>
+<StmntSeq Intrnl_Id="288">
+<LocList>
+<Loc EndOffset="11456" SrcFileId="2" StartOffset="11423"/>
+</LocList>
+<BasicStmnt CovItemId="S68" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="289">
+<LocList>
+<Loc EndOffset="11456" SrcFileId="2" StartOffset="11423"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="898" HierarchyLvlTypeId="9" Intrnl_Id="290" Name="shift">
+<Header>
+<Loc EndOffset="12012" SrcFileId="2" StartOffset="11903"/>
+</Header>
+<LocList>
+<Loc EndOffset="12439" SrcFileId="2" StartOffset="11903"/>
+</LocList>
+<StmntSeq Intrnl_Id="291">
+<LocList>
+<Loc EndOffset="12067" SrcFileId="2" StartOffset="12024"/>
+<Loc EndOffset="12432" SrcFileId="2" StartOffset="12077"/>
+</LocList>
+<BasicStmnt CovItemId="S69" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="292">
+<LocList>
+<Loc EndOffset="12067" SrcFileId="2" StartOffset="12024"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S70" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="293">
+<Branch CovItemId="B41" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="294">
+<Cond/>
+<LocList>
+<Loc EndOffset="12224" SrcFileId="2" StartOffset="12100"/>
+</LocList>
+<StmntSeq Intrnl_Id="295">
+<LocList>
+<Loc EndOffset="12213" SrcFileId="2" StartOffset="12115"/>
+</LocList>
+<BasicStmnt CovItemId="S71" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="296">
+<LocList>
+<Loc EndOffset="12213" SrcFileId="2" StartOffset="12115"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B42" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="297">
+<Cond>
+<Loc EndOffset="12238" SrcFileId="2" StartOffset="12234"/>
+</Cond>
+<LocList>
+<Loc EndOffset="12432" SrcFileId="2" StartOffset="12239"/>
+</LocList>
+<StmntSeq Intrnl_Id="298">
+<LocList>
+<Loc EndOffset="12421" SrcFileId="2" StartOffset="12254"/>
+</LocList>
+<BasicStmnt CovItemId="S72" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="299">
+<LocList>
+<Loc EndOffset="12421" SrcFileId="2" StartOffset="12254"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="12079" SrcFileId="2" StartOffset="12077"/>
+<LocList>
+<Loc EndOffset="12432" SrcFileId="2" StartOffset="12077"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="899" HierarchyLvlTypeId="9" Intrnl_Id="300" Name="shiftWithNoZeroCrossing">
+<Header>
+<Loc EndOffset="12816" SrcFileId="2" StartOffset="12743"/>
+</Header>
+<LocList>
+<Loc EndOffset="13070" SrcFileId="2" StartOffset="12743"/>
+</LocList>
+<StmntSeq Intrnl_Id="301">
+<LocList>
+<Loc EndOffset="13063" SrcFileId="2" StartOffset="12828"/>
+</LocList>
+<CondStmnt CovItemId="S73" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="302">
+<Branch CovItemId="B43" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="303">
+<Cond/>
+<LocList>
+<Loc EndOffset="12907" SrcFileId="2" StartOffset="12845"/>
+</LocList>
+<StmntSeq Intrnl_Id="304">
+<LocList>
+<Loc EndOffset="12896" SrcFileId="2" StartOffset="12860"/>
+</LocList>
+<BasicStmnt CovItemId="S74" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="305">
+<LocList>
+<Loc EndOffset="12896" SrcFileId="2" StartOffset="12860"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B44" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="306">
+<Cond>
+<Loc EndOffset="12921" SrcFileId="2" StartOffset="12917"/>
+</Cond>
+<LocList>
+<Loc EndOffset="13063" SrcFileId="2" StartOffset="12922"/>
+</LocList>
+<StmntSeq Intrnl_Id="307">
+<LocList>
+<Loc EndOffset="13063" SrcFileId="2" StartOffset="12922"/>
+</LocList>
+<CondStmnt CovItemId="S75" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="308">
+<Branch CovItemId="B45" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="309">
+<Cond/>
+<LocList>
+<Loc EndOffset="13001" SrcFileId="2" StartOffset="12939"/>
+</LocList>
+<StmntSeq Intrnl_Id="310">
+<LocList>
+<Loc EndOffset="12990" SrcFileId="2" StartOffset="12954"/>
+</LocList>
+<BasicStmnt CovItemId="S76" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="311">
+<LocList>
+<Loc EndOffset="12990" SrcFileId="2" StartOffset="12954"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B46" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="312">
+<Cond>
+<Loc EndOffset="13015" SrcFileId="2" StartOffset="13011"/>
+</Cond>
+<LocList>
+<Loc EndOffset="13063" SrcFileId="2" StartOffset="13016"/>
+</LocList>
+<StmntSeq Intrnl_Id="313">
+<LocList>
+<Loc EndOffset="13052" SrcFileId="2" StartOffset="13031"/>
+</LocList>
+<BasicStmnt CovItemId="S77" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="314">
+<LocList>
+<Loc EndOffset="13052" SrcFileId="2" StartOffset="13031"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="12924" SrcFileId="2" StartOffset="12922"/>
+<LocList>
+<Loc EndOffset="13063" SrcFileId="2" StartOffset="12922"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="12830" SrcFileId="2" StartOffset="12828"/>
+<LocList>
+<Loc EndOffset="13063" SrcFileId="2" StartOffset="12828"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="900" HierarchyLvlTypeId="9" Intrnl_Id="315" Name="scale">
+<Header>
+<Loc EndOffset="13407" SrcFileId="2" StartOffset="13355"/>
+</Header>
+<LocList>
+<Loc EndOffset="13693" SrcFileId="2" StartOffset="13355"/>
+</LocList>
+<StmntSeq Intrnl_Id="316">
+<LocList>
+<Loc EndOffset="13462" SrcFileId="2" StartOffset="13419"/>
+<Loc EndOffset="13580" SrcFileId="2" StartOffset="13472"/>
+<Loc EndOffset="13686" SrcFileId="2" StartOffset="13590"/>
+</LocList>
+<BasicStmnt CovItemId="S78" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="317">
+<LocList>
+<Loc EndOffset="13462" SrcFileId="2" StartOffset="13419"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S79" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="318">
+<Branch CovItemId="B47" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="319">
+<Cond/>
+<LocList>
+<Loc EndOffset="13580" SrcFileId="2" StartOffset="13488"/>
+</LocList>
+<StmntSeq Intrnl_Id="320">
+<LocList>
+<Loc EndOffset="13569" SrcFileId="2" StartOffset="13503"/>
+</LocList>
+<BasicStmnt CovItemId="S80" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="321">
+<LocList>
+<Loc EndOffset="13569" SrcFileId="2" StartOffset="13503"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B48" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="322">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="323">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="13474" SrcFileId="2" StartOffset="13472"/>
+<LocList>
+<Loc EndOffset="13580" SrcFileId="2" StartOffset="13472"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S81" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="324">
+<LocList>
+<Loc EndOffset="13686" SrcFileId="2" StartOffset="13590"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="901" HierarchyLvlTypeId="9" Intrnl_Id="325" Name="equals">
+<Header>
+<Loc EndOffset="13953" SrcFileId="2" StartOffset="13905"/>
+</Header>
+<LocList>
+<Loc EndOffset="14264" SrcFileId="2" StartOffset="13905"/>
+</LocList>
+<StmntSeq Intrnl_Id="326">
+<LocList>
+<Loc EndOffset="14033" SrcFileId="2" StartOffset="13965"/>
+<Loc EndOffset="14069" SrcFileId="2" StartOffset="14043"/>
+<Loc EndOffset="14152" SrcFileId="2" StartOffset="14079"/>
+<Loc EndOffset="14235" SrcFileId="2" StartOffset="14162"/>
+<Loc EndOffset="14257" SrcFileId="2" StartOffset="14245"/>
+</LocList>
+<CondStmnt CovItemId="S82" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="327">
+<Branch CovItemId="B49" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="328">
+<Cond/>
+<LocList>
+<Loc EndOffset="14033" SrcFileId="2" StartOffset="13994"/>
+</LocList>
+<StmntSeq Intrnl_Id="329">
+<LocList>
+<Loc EndOffset="14022" SrcFileId="2" StartOffset="14009"/>
+</LocList>
+<BasicStmnt CovItemId="S83" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="330">
+<LocList>
+<Loc EndOffset="14022" SrcFileId="2" StartOffset="14009"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B50" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="331">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="332">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="13967" SrcFileId="2" StartOffset="13965"/>
+<LocList>
+<Loc EndOffset="14033" SrcFileId="2" StartOffset="13965"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S84" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="333">
+<LocList>
+<Loc EndOffset="14069" SrcFileId="2" StartOffset="14043"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S85" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="334">
+<Branch CovItemId="B51" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="335">
+<Cond/>
+<LocList>
+<Loc EndOffset="14152" SrcFileId="2" StartOffset="14113"/>
+</LocList>
+<StmntSeq Intrnl_Id="336">
+<LocList>
+<Loc EndOffset="14141" SrcFileId="2" StartOffset="14128"/>
+</LocList>
+<BasicStmnt CovItemId="S86" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="337">
+<LocList>
+<Loc EndOffset="14141" SrcFileId="2" StartOffset="14128"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B52" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="338">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="339">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="14081" SrcFileId="2" StartOffset="14079"/>
+<LocList>
+<Loc EndOffset="14152" SrcFileId="2" StartOffset="14079"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S87" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="340">
+<Branch CovItemId="B53" CovItemPrefix="org.jfree.data.Range.java" Implct="false" Intrnl_Id="341">
+<Cond/>
+<LocList>
+<Loc EndOffset="14235" SrcFileId="2" StartOffset="14196"/>
+</LocList>
+<StmntSeq Intrnl_Id="342">
+<LocList>
+<Loc EndOffset="14224" SrcFileId="2" StartOffset="14211"/>
+</LocList>
+<BasicStmnt CovItemId="S88" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="343">
+<LocList>
+<Loc EndOffset="14224" SrcFileId="2" StartOffset="14211"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B54" CovItemPrefix="org.jfree.data.Range.java" Implct="true" Intrnl_Id="344">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="345">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="14164" SrcFileId="2" StartOffset="14162"/>
+<LocList>
+<Loc EndOffset="14235" SrcFileId="2" StartOffset="14162"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S89" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="346">
+<LocList>
+<Loc EndOffset="14257" SrcFileId="2" StartOffset="14245"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="902" HierarchyLvlTypeId="9" Intrnl_Id="347" Name="isNaNRange">
+<Header>
+<Loc EndOffset="14525" SrcFileId="2" StartOffset="14498"/>
+</Header>
+<LocList>
+<Loc EndOffset="14604" SrcFileId="2" StartOffset="14498"/>
+</LocList>
+<StmntSeq Intrnl_Id="348">
+<LocList>
+<Loc EndOffset="14597" SrcFileId="2" StartOffset="14537"/>
+</LocList>
+<BasicStmnt CovItemId="S90" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="349">
+<LocList>
+<Loc EndOffset="14597" SrcFileId="2" StartOffset="14537"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="903" HierarchyLvlTypeId="9" Intrnl_Id="350" Name="hashCode">
+<Header>
+<Loc EndOffset="14736" SrcFileId="2" StartOffset="14700"/>
+</Header>
+<LocList>
+<Loc EndOffset="15026" SrcFileId="2" StartOffset="14700"/>
+</LocList>
+<StmntSeq Intrnl_Id="351">
+<LocList>
+<Loc EndOffset="14832" SrcFileId="2" StartOffset="14789"/>
+<Loc EndOffset="14880" SrcFileId="2" StartOffset="14842"/>
+<Loc EndOffset="14933" SrcFileId="2" StartOffset="14890"/>
+<Loc EndOffset="14995" SrcFileId="2" StartOffset="14943"/>
+<Loc EndOffset="15019" SrcFileId="2" StartOffset="15005"/>
+</LocList>
+<BasicStmnt CovItemId="S91" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="352">
+<LocList>
+<Loc EndOffset="14832" SrcFileId="2" StartOffset="14789"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S92" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="353">
+<LocList>
+<Loc EndOffset="14880" SrcFileId="2" StartOffset="14842"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S93" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="354">
+<LocList>
+<Loc EndOffset="14933" SrcFileId="2" StartOffset="14890"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S94" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="355">
+<LocList>
+<Loc EndOffset="14995" SrcFileId="2" StartOffset="14943"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S95" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="356">
+<LocList>
+<Loc EndOffset="15019" SrcFileId="2" StartOffset="15005"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="904" HierarchyLvlTypeId="9" Intrnl_Id="357" Name="toString">
+<Header>
+<Loc EndOffset="15263" SrcFileId="2" StartOffset="15224"/>
+</Header>
+<LocList>
+<Loc EndOffset="15338" SrcFileId="2" StartOffset="15224"/>
+</LocList>
+<StmntSeq Intrnl_Id="358">
+<LocList>
+<Loc EndOffset="15331" SrcFileId="2" StartOffset="15275"/>
+</LocList>
+<BasicStmnt CovItemId="S96" CovItemPrefix="org.jfree.data.Range.java" Intrnl_Id="359">
+<LocList>
+<Loc EndOffset="15331" SrcFileId="2" StartOffset="15275"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="915" HierarchyLvlTypeId="8" Intrnl_Id="360" Name="DataUtilities">
+<Header>
+<Loc EndOffset="2362" SrcFileId="3" StartOffset="2327"/>
+</Header>
+<LocList>
+<Loc EndOffset="10006" SrcFileId="3" StartOffset="2327"/>
+</LocList>
+<HierarchyLvl HierarchyLvlId="906" HierarchyLvlTypeId="9" Intrnl_Id="361" Name="equal">
+<Header>
+<Loc EndOffset="2910" SrcFileId="3" StartOffset="2855"/>
+</Header>
+<LocList>
+<Loc EndOffset="3332" SrcFileId="3" StartOffset="2855"/>
+</LocList>
+<StmntSeq Intrnl_Id="362">
+<LocList>
+<Loc EndOffset="2982" SrcFileId="3" StartOffset="2922"/>
+<Loc EndOffset="3078" SrcFileId="3" StartOffset="2992"/>
+<Loc EndOffset="3153" SrcFileId="3" StartOffset="3088"/>
+<Loc EndOffset="3303" SrcFileId="3" StartOffset="3163"/>
+<Loc EndOffset="3325" SrcFileId="3" StartOffset="3313"/>
+</LocList>
+<CondStmnt CovItemId="S1" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="363">
+<Branch CovItemId="B1" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="364">
+<Cond/>
+<LocList>
+<Loc EndOffset="2982" SrcFileId="3" StartOffset="2937"/>
+</LocList>
+<StmntSeq Intrnl_Id="365">
+<LocList>
+<Loc EndOffset="2971" SrcFileId="3" StartOffset="2952"/>
+</LocList>
+<BasicStmnt CovItemId="S2" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="366">
+<LocList>
+<Loc EndOffset="2971" SrcFileId="3" StartOffset="2952"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B2" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="367">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="368">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="2924" SrcFileId="3" StartOffset="2922"/>
+<LocList>
+<Loc EndOffset="2982" SrcFileId="3" StartOffset="2922"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S3" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="369">
+<Branch CovItemId="B3" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="370">
+<Cond/>
+<LocList>
+<Loc EndOffset="3078" SrcFileId="3" StartOffset="3007"/>
+</LocList>
+<StmntSeq Intrnl_Id="371">
+<LocList>
+<Loc EndOffset="3035" SrcFileId="3" StartOffset="3022"/>
+</LocList>
+<BasicStmnt CovItemId="S4" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="372">
+<LocList>
+<Loc EndOffset="3035" SrcFileId="3" StartOffset="3022"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B4" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="373">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="374">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="2994" SrcFileId="3" StartOffset="2992"/>
+<LocList>
+<Loc EndOffset="3078" SrcFileId="3" StartOffset="2992"/>
+</LocList>
+</CondStmnt>
+<CondStmnt CovItemId="S5" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="375">
+<Branch CovItemId="B5" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="376">
+<Cond/>
+<LocList>
+<Loc EndOffset="3153" SrcFileId="3" StartOffset="3114"/>
+</LocList>
+<StmntSeq Intrnl_Id="377">
+<LocList>
+<Loc EndOffset="3142" SrcFileId="3" StartOffset="3129"/>
+</LocList>
+<BasicStmnt CovItemId="S6" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="378">
+<LocList>
+<Loc EndOffset="3142" SrcFileId="3" StartOffset="3129"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B6" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="379">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="380">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="3090" SrcFileId="3" StartOffset="3088"/>
+<LocList>
+<Loc EndOffset="3153" SrcFileId="3" StartOffset="3088"/>
+</LocList>
+</CondStmnt>
+<LoopStmnt CovItemId="S7" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="381" MltplExecId="L1-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L1-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L1-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="382">
+<LocList>
+<Loc EndOffset="3292" SrcFileId="3" StartOffset="3213"/>
+</LocList>
+<CondStmnt CovItemId="S8" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="383">
+<Branch CovItemId="B7" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="384">
+<Cond/>
+<LocList>
+<Loc EndOffset="3292" SrcFileId="3" StartOffset="3245"/>
+</LocList>
+<StmntSeq Intrnl_Id="385">
+<LocList>
+<Loc EndOffset="3277" SrcFileId="3" StartOffset="3264"/>
+</LocList>
+<BasicStmnt CovItemId="S9" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="386">
+<LocList>
+<Loc EndOffset="3277" SrcFileId="3" StartOffset="3264"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B8" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="387">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="388">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="3215" SrcFileId="3" StartOffset="3213"/>
+<LocList>
+<Loc EndOffset="3292" SrcFileId="3" StartOffset="3213"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="3166" SrcFileId="3" StartOffset="3163"/>
+<LocList>
+<Loc EndOffset="3303" SrcFileId="3" StartOffset="3163"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S10" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="389">
+<LocList>
+<Loc EndOffset="3325" SrcFileId="3" StartOffset="3313"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="907" HierarchyLvlTypeId="9" Intrnl_Id="390" Name="clone">
+<Header>
+<Loc EndOffset="3614" SrcFileId="3" StartOffset="3565"/>
+</Header>
+<LocList>
+<Loc EndOffset="4045" SrcFileId="3" StartOffset="3565"/>
+</LocList>
+<StmntSeq Intrnl_Id="391">
+<LocList>
+<Loc EndOffset="3673" SrcFileId="3" StartOffset="3626"/>
+<Loc EndOffset="3730" SrcFileId="3" StartOffset="3683"/>
+<Loc EndOffset="4015" SrcFileId="3" StartOffset="3740"/>
+<Loc EndOffset="4038" SrcFileId="3" StartOffset="4025"/>
+</LocList>
+<BasicStmnt CovItemId="S11" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="392">
+<LocList>
+<Loc EndOffset="3673" SrcFileId="3" StartOffset="3626"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S12" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="393">
+<LocList>
+<Loc EndOffset="3730" SrcFileId="3" StartOffset="3683"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S13" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="394" MltplExecId="L2-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L2-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L2-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="395">
+<LocList>
+<Loc EndOffset="4004" SrcFileId="3" StartOffset="3795"/>
+</LocList>
+<CondStmnt CovItemId="S14" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="396">
+<Branch CovItemId="B9" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="397">
+<Cond/>
+<LocList>
+<Loc EndOffset="4004" SrcFileId="3" StartOffset="3818"/>
+</LocList>
+<StmntSeq Intrnl_Id="398">
+<LocList>
+<Loc EndOffset="3881" SrcFileId="3" StartOffset="3837"/>
+<Loc EndOffset="3956" SrcFileId="3" StartOffset="3899"/>
+<Loc EndOffset="3989" SrcFileId="3" StartOffset="3974"/>
+</LocList>
+<BasicStmnt CovItemId="S15" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="399">
+<LocList>
+<Loc EndOffset="3881" SrcFileId="3" StartOffset="3837"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S16" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="400">
+<LocList>
+<Loc EndOffset="3956" SrcFileId="3" StartOffset="3899"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S17" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="401">
+<LocList>
+<Loc EndOffset="3989" SrcFileId="3" StartOffset="3974"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B10" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="402">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="403">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="3797" SrcFileId="3" StartOffset="3795"/>
+<LocList>
+<Loc EndOffset="4004" SrcFileId="3" StartOffset="3795"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="3743" SrcFileId="3" StartOffset="3740"/>
+<LocList>
+<Loc EndOffset="4015" SrcFileId="3" StartOffset="3740"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S18" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="404">
+<LocList>
+<Loc EndOffset="4038" SrcFileId="3" StartOffset="4025"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="908" HierarchyLvlTypeId="9" Intrnl_Id="405" Name="calculateColumnTotal">
+<Header>
+<Loc EndOffset="4440" SrcFileId="3" StartOffset="4372"/>
+</Header>
+<LocList>
+<Loc EndOffset="4793" SrcFileId="3" StartOffset="4372"/>
+</LocList>
+<StmntSeq Intrnl_Id="406">
+<LocList>
+<Loc EndOffset="4495" SrcFileId="3" StartOffset="4452"/>
+<Loc EndOffset="4524" SrcFileId="3" StartOffset="4505"/>
+<Loc EndOffset="4568" SrcFileId="3" StartOffset="4534"/>
+<Loc EndOffset="4763" SrcFileId="3" StartOffset="4578"/>
+<Loc EndOffset="4786" SrcFileId="3" StartOffset="4773"/>
+</LocList>
+<BasicStmnt CovItemId="S19" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="407">
+<LocList>
+<Loc EndOffset="4495" SrcFileId="3" StartOffset="4452"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S20" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="408">
+<LocList>
+<Loc EndOffset="4524" SrcFileId="3" StartOffset="4505"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S21" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="409">
+<LocList>
+<Loc EndOffset="4568" SrcFileId="3" StartOffset="4534"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S22" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="410" MltplExecId="L3-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L3-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L3-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="411">
+<LocList>
+<Loc EndOffset="4664" SrcFileId="3" StartOffset="4628"/>
+<Loc EndOffset="4752" SrcFileId="3" StartOffset="4678"/>
+</LocList>
+<BasicStmnt CovItemId="S23" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="412">
+<LocList>
+<Loc EndOffset="4664" SrcFileId="3" StartOffset="4628"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S24" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="413">
+<Branch CovItemId="B11" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="414">
+<Cond/>
+<LocList>
+<Loc EndOffset="4752" SrcFileId="3" StartOffset="4693"/>
+</LocList>
+<StmntSeq Intrnl_Id="415">
+<LocList>
+<Loc EndOffset="4737" SrcFileId="3" StartOffset="4712"/>
+</LocList>
+<BasicStmnt CovItemId="S25" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="416">
+<LocList>
+<Loc EndOffset="4737" SrcFileId="3" StartOffset="4712"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B12" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="417">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="418">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="4680" SrcFileId="3" StartOffset="4678"/>
+<LocList>
+<Loc EndOffset="4752" SrcFileId="3" StartOffset="4678"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="4581" SrcFileId="3" StartOffset="4578"/>
+<LocList>
+<Loc EndOffset="4763" SrcFileId="3" StartOffset="4578"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S26" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="419">
+<LocList>
+<Loc EndOffset="4786" SrcFileId="3" StartOffset="4773"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="909" HierarchyLvlTypeId="9" Intrnl_Id="420" Name="calculateColumnTotal">
+<Header>
+<Loc EndOffset="5377" SrcFileId="3" StartOffset="5278"/>
+</Header>
+<LocList>
+<Loc EndOffset="5843" SrcFileId="3" StartOffset="5278"/>
+</LocList>
+<StmntSeq Intrnl_Id="421">
+<LocList>
+<Loc EndOffset="5432" SrcFileId="3" StartOffset="5389"/>
+<Loc EndOffset="5461" SrcFileId="3" StartOffset="5442"/>
+<Loc EndOffset="5505" SrcFileId="3" StartOffset="5471"/>
+<Loc EndOffset="5813" SrcFileId="3" StartOffset="5515"/>
+<Loc EndOffset="5836" SrcFileId="3" StartOffset="5823"/>
+</LocList>
+<BasicStmnt CovItemId="S27" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="422">
+<LocList>
+<Loc EndOffset="5432" SrcFileId="3" StartOffset="5389"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S28" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="423">
+<LocList>
+<Loc EndOffset="5461" SrcFileId="3" StartOffset="5442"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S29" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="424">
+<LocList>
+<Loc EndOffset="5505" SrcFileId="3" StartOffset="5471"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S30" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="425" MltplExecId="L4-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L4-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L4-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="426">
+<LocList>
+<Loc EndOffset="5596" SrcFileId="3" StartOffset="5573"/>
+<Loc EndOffset="5802" SrcFileId="3" StartOffset="5610"/>
+</LocList>
+<BasicStmnt CovItemId="S31" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="427">
+<LocList>
+<Loc EndOffset="5596" SrcFileId="3" StartOffset="5573"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S32" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="428">
+<Branch CovItemId="B13" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="429">
+<Cond/>
+<LocList>
+<Loc EndOffset="5802" SrcFileId="3" StartOffset="5630"/>
+</LocList>
+<StmntSeq Intrnl_Id="430">
+<LocList>
+<Loc EndOffset="5687" SrcFileId="3" StartOffset="5649"/>
+<Loc EndOffset="5787" SrcFileId="3" StartOffset="5705"/>
+</LocList>
+<BasicStmnt CovItemId="S33" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="431">
+<LocList>
+<Loc EndOffset="5687" SrcFileId="3" StartOffset="5649"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S34" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="432">
+<Branch CovItemId="B15" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="433">
+<Cond/>
+<LocList>
+<Loc EndOffset="5787" SrcFileId="3" StartOffset="5720"/>
+</LocList>
+<StmntSeq Intrnl_Id="434">
+<LocList>
+<Loc EndOffset="5768" SrcFileId="3" StartOffset="5743"/>
+</LocList>
+<BasicStmnt CovItemId="S35" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="435">
+<LocList>
+<Loc EndOffset="5768" SrcFileId="3" StartOffset="5743"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B16" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="436">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="437">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="5707" SrcFileId="3" StartOffset="5705"/>
+<LocList>
+<Loc EndOffset="5787" SrcFileId="3" StartOffset="5705"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B14" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="438">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="439">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="5612" SrcFileId="3" StartOffset="5610"/>
+<LocList>
+<Loc EndOffset="5802" SrcFileId="3" StartOffset="5610"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="5518" SrcFileId="3" StartOffset="5515"/>
+<LocList>
+<Loc EndOffset="5813" SrcFileId="3" StartOffset="5515"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S36" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="440">
+<LocList>
+<Loc EndOffset="5836" SrcFileId="3" StartOffset="5823"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="910" HierarchyLvlTypeId="9" Intrnl_Id="441" Name="calculateRowTotal">
+<Header>
+<Loc EndOffset="6220" SrcFileId="3" StartOffset="6158"/>
+</Header>
+<LocList>
+<Loc EndOffset="6579" SrcFileId="3" StartOffset="6158"/>
+</LocList>
+<StmntSeq Intrnl_Id="442">
+<LocList>
+<Loc EndOffset="6275" SrcFileId="3" StartOffset="6232"/>
+<Loc EndOffset="6304" SrcFileId="3" StartOffset="6285"/>
+<Loc EndOffset="6354" SrcFileId="3" StartOffset="6314"/>
+<Loc EndOffset="6549" SrcFileId="3" StartOffset="6364"/>
+<Loc EndOffset="6572" SrcFileId="3" StartOffset="6559"/>
+</LocList>
+<BasicStmnt CovItemId="S37" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="443">
+<LocList>
+<Loc EndOffset="6275" SrcFileId="3" StartOffset="6232"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S38" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="444">
+<LocList>
+<Loc EndOffset="6304" SrcFileId="3" StartOffset="6285"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S39" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="445">
+<LocList>
+<Loc EndOffset="6354" SrcFileId="3" StartOffset="6314"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S40" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="446" MltplExecId="L5-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L5-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L5-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="447">
+<LocList>
+<Loc EndOffset="6450" SrcFileId="3" StartOffset="6417"/>
+<Loc EndOffset="6538" SrcFileId="3" StartOffset="6464"/>
+</LocList>
+<BasicStmnt CovItemId="S41" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="448">
+<LocList>
+<Loc EndOffset="6450" SrcFileId="3" StartOffset="6417"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S42" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="449">
+<Branch CovItemId="B17" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="450">
+<Cond/>
+<LocList>
+<Loc EndOffset="6538" SrcFileId="3" StartOffset="6479"/>
+</LocList>
+<StmntSeq Intrnl_Id="451">
+<LocList>
+<Loc EndOffset="6523" SrcFileId="3" StartOffset="6498"/>
+</LocList>
+<BasicStmnt CovItemId="S43" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="452">
+<LocList>
+<Loc EndOffset="6523" SrcFileId="3" StartOffset="6498"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B18" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="453">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="454">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="6466" SrcFileId="3" StartOffset="6464"/>
+<LocList>
+<Loc EndOffset="6538" SrcFileId="3" StartOffset="6464"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="6367" SrcFileId="3" StartOffset="6364"/>
+<LocList>
+<Loc EndOffset="6549" SrcFileId="3" StartOffset="6364"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S44" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="455">
+<LocList>
+<Loc EndOffset="6572" SrcFileId="3" StartOffset="6559"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="911" HierarchyLvlTypeId="9" Intrnl_Id="456" Name="calculateRowTotal">
+<Header>
+<Loc EndOffset="7148" SrcFileId="3" StartOffset="7055"/>
+</Header>
+<LocList>
+<Loc EndOffset="7614" SrcFileId="3" StartOffset="7055"/>
+</LocList>
+<StmntSeq Intrnl_Id="457">
+<LocList>
+<Loc EndOffset="7203" SrcFileId="3" StartOffset="7160"/>
+<Loc EndOffset="7232" SrcFileId="3" StartOffset="7213"/>
+<Loc EndOffset="7279" SrcFileId="3" StartOffset="7242"/>
+<Loc EndOffset="7584" SrcFileId="3" StartOffset="7289"/>
+<Loc EndOffset="7607" SrcFileId="3" StartOffset="7594"/>
+</LocList>
+<BasicStmnt CovItemId="S45" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="458">
+<LocList>
+<Loc EndOffset="7203" SrcFileId="3" StartOffset="7160"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S46" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="459">
+<LocList>
+<Loc EndOffset="7232" SrcFileId="3" StartOffset="7213"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S47" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="460">
+<LocList>
+<Loc EndOffset="7279" SrcFileId="3" StartOffset="7242"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S48" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="461" MltplExecId="L6-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L6-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L6-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="462">
+<LocList>
+<Loc EndOffset="7370" SrcFileId="3" StartOffset="7347"/>
+<Loc EndOffset="7573" SrcFileId="3" StartOffset="7384"/>
+</LocList>
+<BasicStmnt CovItemId="S49" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="463">
+<LocList>
+<Loc EndOffset="7370" SrcFileId="3" StartOffset="7347"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S50" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="464">
+<Branch CovItemId="B19" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="465">
+<Cond/>
+<LocList>
+<Loc EndOffset="7573" SrcFileId="3" StartOffset="7404"/>
+</LocList>
+<StmntSeq Intrnl_Id="466">
+<LocList>
+<Loc EndOffset="7458" SrcFileId="3" StartOffset="7423"/>
+<Loc EndOffset="7558" SrcFileId="3" StartOffset="7476"/>
+</LocList>
+<BasicStmnt CovItemId="S51" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="467">
+<LocList>
+<Loc EndOffset="7458" SrcFileId="3" StartOffset="7423"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S52" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="468">
+<Branch CovItemId="B21" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="469">
+<Cond/>
+<LocList>
+<Loc EndOffset="7558" SrcFileId="3" StartOffset="7491"/>
+</LocList>
+<StmntSeq Intrnl_Id="470">
+<LocList>
+<Loc EndOffset="7539" SrcFileId="3" StartOffset="7514"/>
+</LocList>
+<BasicStmnt CovItemId="S53" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="471">
+<LocList>
+<Loc EndOffset="7539" SrcFileId="3" StartOffset="7514"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B22" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="472">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="473">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="7478" SrcFileId="3" StartOffset="7476"/>
+<LocList>
+<Loc EndOffset="7558" SrcFileId="3" StartOffset="7476"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B20" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="474">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="475">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="7386" SrcFileId="3" StartOffset="7384"/>
+<LocList>
+<Loc EndOffset="7573" SrcFileId="3" StartOffset="7384"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="7292" SrcFileId="3" StartOffset="7289"/>
+<LocList>
+<Loc EndOffset="7584" SrcFileId="3" StartOffset="7289"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S54" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="476">
+<LocList>
+<Loc EndOffset="7607" SrcFileId="3" StartOffset="7594"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="912" HierarchyLvlTypeId="9" Intrnl_Id="477" Name="createNumberArray">
+<Header>
+<Loc EndOffset="7941" SrcFileId="3" StartOffset="7886"/>
+</Header>
+<LocList>
+<Loc EndOffset="8185" SrcFileId="3" StartOffset="7886"/>
+</LocList>
+<StmntSeq Intrnl_Id="478">
+<LocList>
+<Loc EndOffset="7996" SrcFileId="3" StartOffset="7953"/>
+<Loc EndOffset="8048" SrcFileId="3" StartOffset="8006"/>
+<Loc EndOffset="8154" SrcFileId="3" StartOffset="8058"/>
+<Loc EndOffset="8178" SrcFileId="3" StartOffset="8164"/>
+</LocList>
+<BasicStmnt CovItemId="S55" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="479">
+<LocList>
+<Loc EndOffset="7996" SrcFileId="3" StartOffset="7953"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S56" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="480">
+<LocList>
+<Loc EndOffset="8048" SrcFileId="3" StartOffset="8006"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S57" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="481" MltplExecId="L7-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L7-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L7-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="482">
+<LocList>
+<Loc EndOffset="8143" SrcFileId="3" StartOffset="8111"/>
+</LocList>
+<BasicStmnt CovItemId="S58" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="483">
+<LocList>
+<Loc EndOffset="8143" SrcFileId="3" StartOffset="8111"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="8061" SrcFileId="3" StartOffset="8058"/>
+<LocList>
+<Loc EndOffset="8154" SrcFileId="3" StartOffset="8058"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S59" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="484">
+<LocList>
+<Loc EndOffset="8178" SrcFileId="3" StartOffset="8164"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="913" HierarchyLvlTypeId="9" Intrnl_Id="485" Name="createNumberArray2D">
+<Header>
+<Loc EndOffset="8553" SrcFileId="3" StartOffset="8492"/>
+</Header>
+<LocList>
+<Loc EndOffset="8821" SrcFileId="3" StartOffset="8492"/>
+</LocList>
+<StmntSeq Intrnl_Id="486">
+<LocList>
+<Loc EndOffset="8608" SrcFileId="3" StartOffset="8565"/>
+<Loc EndOffset="8639" SrcFileId="3" StartOffset="8618"/>
+<Loc EndOffset="8686" SrcFileId="3" StartOffset="8649"/>
+<Loc EndOffset="8790" SrcFileId="3" StartOffset="8696"/>
+<Loc EndOffset="8814" SrcFileId="3" StartOffset="8800"/>
+</LocList>
+<BasicStmnt CovItemId="S60" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="487">
+<LocList>
+<Loc EndOffset="8608" SrcFileId="3" StartOffset="8565"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S61" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="488">
+<LocList>
+<Loc EndOffset="8639" SrcFileId="3" StartOffset="8618"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S62" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="489">
+<LocList>
+<Loc EndOffset="8686" SrcFileId="3" StartOffset="8649"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S63" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="490" MltplExecId="L8-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L8-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L8-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="491">
+<LocList>
+<Loc EndOffset="8779" SrcFileId="3" StartOffset="8740"/>
+</LocList>
+<BasicStmnt CovItemId="S64" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="492">
+<LocList>
+<Loc EndOffset="8779" SrcFileId="3" StartOffset="8740"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="8699" SrcFileId="3" StartOffset="8696"/>
+<LocList>
+<Loc EndOffset="8790" SrcFileId="3" StartOffset="8696"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S65" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="493">
+<LocList>
+<Loc EndOffset="8814" SrcFileId="3" StartOffset="8800"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="914" HierarchyLvlTypeId="9" Intrnl_Id="494" Name="getCumulativePercentages">
+<Header>
+<Loc EndOffset="9283" SrcFileId="3" StartOffset="9215"/>
+</Header>
+<LocList>
+<Loc EndOffset="10001" SrcFileId="3" StartOffset="9215"/>
+</LocList>
+<StmntSeq Intrnl_Id="495">
+<LocList>
+<Loc EndOffset="9338" SrcFileId="3" StartOffset="9295"/>
+<Loc EndOffset="9401" SrcFileId="3" StartOffset="9348"/>
+<Loc EndOffset="9430" SrcFileId="3" StartOffset="9411"/>
+<Loc EndOffset="9635" SrcFileId="3" StartOffset="9440"/>
+<Loc EndOffset="9671" SrcFileId="3" StartOffset="9645"/>
+<Loc EndOffset="9970" SrcFileId="3" StartOffset="9681"/>
+<Loc EndOffset="9994" SrcFileId="3" StartOffset="9980"/>
+</LocList>
+<BasicStmnt CovItemId="S66" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="496">
+<LocList>
+<Loc EndOffset="9338" SrcFileId="3" StartOffset="9295"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S67" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="497">
+<LocList>
+<Loc EndOffset="9401" SrcFileId="3" StartOffset="9348"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S68" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="498">
+<LocList>
+<Loc EndOffset="9430" SrcFileId="3" StartOffset="9411"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S69" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="499" MltplExecId="L9-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L9-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L9-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="500">
+<LocList>
+<Loc EndOffset="9529" SrcFileId="3" StartOffset="9501"/>
+<Loc EndOffset="9624" SrcFileId="3" StartOffset="9543"/>
+</LocList>
+<BasicStmnt CovItemId="S70" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="501">
+<LocList>
+<Loc EndOffset="9529" SrcFileId="3" StartOffset="9501"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S71" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="502">
+<Branch CovItemId="B23" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="503">
+<Cond/>
+<LocList>
+<Loc EndOffset="9624" SrcFileId="3" StartOffset="9558"/>
+</LocList>
+<StmntSeq Intrnl_Id="504">
+<LocList>
+<Loc EndOffset="9609" SrcFileId="3" StartOffset="9577"/>
+</LocList>
+<BasicStmnt CovItemId="S72" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="505">
+<LocList>
+<Loc EndOffset="9609" SrcFileId="3" StartOffset="9577"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B24" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="506">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="507">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="9545" SrcFileId="3" StartOffset="9543"/>
+<LocList>
+<Loc EndOffset="9624" SrcFileId="3" StartOffset="9543"/>
+</LocList>
+</CondStmnt>
+</StmntSeq>
+<Keyword EndOffset="9443" SrcFileId="3" StartOffset="9440"/>
+<LocList>
+<Loc EndOffset="9635" SrcFileId="3" StartOffset="9440"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S73" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="508">
+<LocList>
+<Loc EndOffset="9671" SrcFileId="3" StartOffset="9645"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S74" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="509" MltplExecId="L10-2" MltplExecPrefix="org.jfree.data.DataUtilities.java" NvrExecId="L10-0" NvrExecPrefix="org.jfree.data.DataUtilities.java" OnceExecutedId="L10-1" OnceExecutedPrefix="org.jfree.data.DataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="510">
+<LocList>
+<Loc EndOffset="9770" SrcFileId="3" StartOffset="9742"/>
+<Loc EndOffset="9879" SrcFileId="3" StartOffset="9784"/>
+<Loc EndOffset="9959" SrcFileId="3" StartOffset="9893"/>
+</LocList>
+<BasicStmnt CovItemId="S75" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="511">
+<LocList>
+<Loc EndOffset="9770" SrcFileId="3" StartOffset="9742"/>
+</LocList>
+</BasicStmnt>
+<CondStmnt CovItemId="S76" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="512">
+<Branch CovItemId="B25" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="false" Intrnl_Id="513">
+<Cond/>
+<LocList>
+<Loc EndOffset="9879" SrcFileId="3" StartOffset="9799"/>
+</LocList>
+<StmntSeq Intrnl_Id="514">
+<LocList>
+<Loc EndOffset="9864" SrcFileId="3" StartOffset="9818"/>
+</LocList>
+<BasicStmnt CovItemId="S77" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="515">
+<LocList>
+<Loc EndOffset="9864" SrcFileId="3" StartOffset="9818"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</Branch>
+<Branch CovItemId="B26" CovItemPrefix="org.jfree.data.DataUtilities.java" Implct="true" Intrnl_Id="516">
+<Cond/>
+<LocList/>
+<StmntSeq Intrnl_Id="517">
+<LocList/>
+</StmntSeq>
+</Branch>
+<Keyword EndOffset="9786" SrcFileId="3" StartOffset="9784"/>
+<LocList>
+<Loc EndOffset="9879" SrcFileId="3" StartOffset="9784"/>
+</LocList>
+</CondStmnt>
+<BasicStmnt CovItemId="S78" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="518">
+<LocList>
+<Loc EndOffset="9959" SrcFileId="3" StartOffset="9893"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="9684" SrcFileId="3" StartOffset="9681"/>
+<LocList>
+<Loc EndOffset="9970" SrcFileId="3" StartOffset="9681"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S79" CovItemPrefix="org.jfree.data.DataUtilities.java" Intrnl_Id="519">
+<LocList>
+<Loc EndOffset="9994" SrcFileId="3" StartOffset="9980"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+</HierarchyLvl>
+</HierarchyLvl>
+</HierarchyLvl>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="945" HierarchyLvlTypeId="7" Intrnl_Id="520" Name="Test">
+<Header/>
+<LocList/>
+<HierarchyLvl HierarchyLvlId="927" HierarchyLvlTypeId="8" Intrnl_Id="521" Name="TestRange">
+<Header>
+<Loc EndOffset="121" SrcFileId="4" StartOffset="99"/>
+</Header>
+<LocList>
+<Loc EndOffset="3266" SrcFileId="4" StartOffset="99"/>
+</LocList>
+<HierarchyLvl HierarchyLvlId="916" HierarchyLvlTypeId="9" Intrnl_Id="522" Name="testCombine_WithTwoSameRange">
+<Header>
+<Loc EndOffset="176" SrcFileId="4" StartOffset="126"/>
+</Header>
+<LocList>
+<Loc EndOffset="549" SrcFileId="4" StartOffset="126"/>
+</LocList>
+<StmntSeq Intrnl_Id="523">
+<LocList>
+<Loc EndOffset="216" SrcFileId="4" StartOffset="184"/>
+<Loc EndOffset="252" SrcFileId="4" StartOffset="220"/>
+<Loc EndOffset="303" SrcFileId="4" StartOffset="256"/>
+<Loc EndOffset="360" SrcFileId="4" StartOffset="307"/>
+<Loc EndOffset="421" SrcFileId="4" StartOffset="364"/>
+<Loc EndOffset="482" SrcFileId="4" StartOffset="425"/>
+<Loc EndOffset="545" SrcFileId="4" StartOffset="486"/>
+</LocList>
+<BasicStmnt CovItemId="S1" CovItemPrefix="Test.TestRange.java" Intrnl_Id="524">
+<LocList>
+<Loc EndOffset="216" SrcFileId="4" StartOffset="184"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S2" CovItemPrefix="Test.TestRange.java" Intrnl_Id="525">
+<LocList>
+<Loc EndOffset="252" SrcFileId="4" StartOffset="220"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S3" CovItemPrefix="Test.TestRange.java" Intrnl_Id="526">
+<LocList>
+<Loc EndOffset="303" SrcFileId="4" StartOffset="256"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S4" CovItemPrefix="Test.TestRange.java" Intrnl_Id="527">
+<LocList>
+<Loc EndOffset="360" SrcFileId="4" StartOffset="307"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S5" CovItemPrefix="Test.TestRange.java" Intrnl_Id="528">
+<LocList>
+<Loc EndOffset="421" SrcFileId="4" StartOffset="364"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S6" CovItemPrefix="Test.TestRange.java" Intrnl_Id="529">
+<LocList>
+<Loc EndOffset="482" SrcFileId="4" StartOffset="425"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S7" CovItemPrefix="Test.TestRange.java" Intrnl_Id="530">
+<LocList>
+<Loc EndOffset="545" SrcFileId="4" StartOffset="486"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="917" HierarchyLvlTypeId="9" Intrnl_Id="531" Name="testCombine_WithTwoIntersectRange">
+<Header>
+<Loc EndOffset="610" SrcFileId="4" StartOffset="555"/>
+</Header>
+<LocList>
+<Loc EndOffset="988" SrcFileId="4" StartOffset="555"/>
+</LocList>
+<StmntSeq Intrnl_Id="532">
+<LocList>
+<Loc EndOffset="651" SrcFileId="4" StartOffset="618"/>
+<Loc EndOffset="690" SrcFileId="4" StartOffset="655"/>
+<Loc EndOffset="741" SrcFileId="4" StartOffset="694"/>
+<Loc EndOffset="798" SrcFileId="4" StartOffset="745"/>
+<Loc EndOffset="860" SrcFileId="4" StartOffset="802"/>
+<Loc EndOffset="921" SrcFileId="4" StartOffset="864"/>
+<Loc EndOffset="984" SrcFileId="4" StartOffset="925"/>
+</LocList>
+<BasicStmnt CovItemId="S8" CovItemPrefix="Test.TestRange.java" Intrnl_Id="533">
+<LocList>
+<Loc EndOffset="651" SrcFileId="4" StartOffset="618"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S9" CovItemPrefix="Test.TestRange.java" Intrnl_Id="534">
+<LocList>
+<Loc EndOffset="690" SrcFileId="4" StartOffset="655"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S10" CovItemPrefix="Test.TestRange.java" Intrnl_Id="535">
+<LocList>
+<Loc EndOffset="741" SrcFileId="4" StartOffset="694"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S11" CovItemPrefix="Test.TestRange.java" Intrnl_Id="536">
+<LocList>
+<Loc EndOffset="798" SrcFileId="4" StartOffset="745"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S12" CovItemPrefix="Test.TestRange.java" Intrnl_Id="537">
+<LocList>
+<Loc EndOffset="860" SrcFileId="4" StartOffset="802"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S13" CovItemPrefix="Test.TestRange.java" Intrnl_Id="538">
+<LocList>
+<Loc EndOffset="921" SrcFileId="4" StartOffset="864"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S14" CovItemPrefix="Test.TestRange.java" Intrnl_Id="539">
+<LocList>
+<Loc EndOffset="984" SrcFileId="4" StartOffset="925"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="918" HierarchyLvlTypeId="9" Intrnl_Id="540" Name="testCombine_WithTwoUnintersectRange">
+<Header>
+<Loc EndOffset="1051" SrcFileId="4" StartOffset="994"/>
+</Header>
+<LocList>
+<Loc EndOffset="1427" SrcFileId="4" StartOffset="994"/>
+</LocList>
+<StmntSeq Intrnl_Id="541">
+<LocList>
+<Loc EndOffset="1092" SrcFileId="4" StartOffset="1059"/>
+<Loc EndOffset="1128" SrcFileId="4" StartOffset="1096"/>
+<Loc EndOffset="1179" SrcFileId="4" StartOffset="1132"/>
+<Loc EndOffset="1237" SrcFileId="4" StartOffset="1183"/>
+<Loc EndOffset="1299" SrcFileId="4" StartOffset="1241"/>
+<Loc EndOffset="1360" SrcFileId="4" StartOffset="1303"/>
+<Loc EndOffset="1423" SrcFileId="4" StartOffset="1364"/>
+</LocList>
+<BasicStmnt CovItemId="S15" CovItemPrefix="Test.TestRange.java" Intrnl_Id="542">
+<LocList>
+<Loc EndOffset="1092" SrcFileId="4" StartOffset="1059"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S16" CovItemPrefix="Test.TestRange.java" Intrnl_Id="543">
+<LocList>
+<Loc EndOffset="1128" SrcFileId="4" StartOffset="1096"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S17" CovItemPrefix="Test.TestRange.java" Intrnl_Id="544">
+<LocList>
+<Loc EndOffset="1179" SrcFileId="4" StartOffset="1132"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S18" CovItemPrefix="Test.TestRange.java" Intrnl_Id="545">
+<LocList>
+<Loc EndOffset="1237" SrcFileId="4" StartOffset="1183"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S19" CovItemPrefix="Test.TestRange.java" Intrnl_Id="546">
+<LocList>
+<Loc EndOffset="1299" SrcFileId="4" StartOffset="1241"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S20" CovItemPrefix="Test.TestRange.java" Intrnl_Id="547">
+<LocList>
+<Loc EndOffset="1360" SrcFileId="4" StartOffset="1303"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S21" CovItemPrefix="Test.TestRange.java" Intrnl_Id="548">
+<LocList>
+<Loc EndOffset="1423" SrcFileId="4" StartOffset="1364"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="919" HierarchyLvlTypeId="9" Intrnl_Id="549" Name="testConstrain">
+<Header>
+<Loc EndOffset="1468" SrcFileId="4" StartOffset="1433"/>
+</Header>
+<LocList>
+<Loc EndOffset="1934" SrcFileId="4" StartOffset="1433"/>
+</LocList>
+<StmntSeq Intrnl_Id="550">
+<LocList>
+<Loc EndOffset="1508" SrcFileId="4" StartOffset="1476"/>
+<Loc EndOffset="1566" SrcFileId="4" StartOffset="1512"/>
+<Loc EndOffset="1626" SrcFileId="4" StartOffset="1570"/>
+<Loc EndOffset="1684" SrcFileId="4" StartOffset="1630"/>
+<Loc EndOffset="1746" SrcFileId="4" StartOffset="1688"/>
+<Loc EndOffset="1810" SrcFileId="4" StartOffset="1750"/>
+<Loc EndOffset="1869" SrcFileId="4" StartOffset="1814"/>
+<Loc EndOffset="1930" SrcFileId="4" StartOffset="1873"/>
+</LocList>
+<BasicStmnt CovItemId="S22" CovItemPrefix="Test.TestRange.java" Intrnl_Id="551">
+<LocList>
+<Loc EndOffset="1508" SrcFileId="4" StartOffset="1476"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S23" CovItemPrefix="Test.TestRange.java" Intrnl_Id="552">
+<LocList>
+<Loc EndOffset="1566" SrcFileId="4" StartOffset="1512"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S24" CovItemPrefix="Test.TestRange.java" Intrnl_Id="553">
+<LocList>
+<Loc EndOffset="1626" SrcFileId="4" StartOffset="1570"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S25" CovItemPrefix="Test.TestRange.java" Intrnl_Id="554">
+<LocList>
+<Loc EndOffset="1684" SrcFileId="4" StartOffset="1630"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S26" CovItemPrefix="Test.TestRange.java" Intrnl_Id="555">
+<LocList>
+<Loc EndOffset="1746" SrcFileId="4" StartOffset="1688"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S27" CovItemPrefix="Test.TestRange.java" Intrnl_Id="556">
+<LocList>
+<Loc EndOffset="1810" SrcFileId="4" StartOffset="1750"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S28" CovItemPrefix="Test.TestRange.java" Intrnl_Id="557">
+<LocList>
+<Loc EndOffset="1869" SrcFileId="4" StartOffset="1814"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S29" CovItemPrefix="Test.TestRange.java" Intrnl_Id="558">
+<LocList>
+<Loc EndOffset="1930" SrcFileId="4" StartOffset="1873"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="920" HierarchyLvlTypeId="9" Intrnl_Id="559" Name="testContains">
+<Header>
+<Loc EndOffset="1974" SrcFileId="4" StartOffset="1940"/>
+</Header>
+<LocList>
+<Loc EndOffset="2236" SrcFileId="4" StartOffset="1940"/>
+</LocList>
+<StmntSeq Intrnl_Id="560">
+<LocList>
+<Loc EndOffset="2014" SrcFileId="4" StartOffset="1982"/>
+<Loc EndOffset="2060" SrcFileId="4" StartOffset="2018"/>
+<Loc EndOffset="2103" SrcFileId="4" StartOffset="2064"/>
+<Loc EndOffset="2145" SrcFileId="4" StartOffset="2107"/>
+<Loc EndOffset="2187" SrcFileId="4" StartOffset="2149"/>
+<Loc EndOffset="2232" SrcFileId="4" StartOffset="2191"/>
+</LocList>
+<BasicStmnt CovItemId="S30" CovItemPrefix="Test.TestRange.java" Intrnl_Id="561">
+<LocList>
+<Loc EndOffset="2014" SrcFileId="4" StartOffset="1982"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S31" CovItemPrefix="Test.TestRange.java" Intrnl_Id="562">
+<LocList>
+<Loc EndOffset="2060" SrcFileId="4" StartOffset="2018"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S32" CovItemPrefix="Test.TestRange.java" Intrnl_Id="563">
+<LocList>
+<Loc EndOffset="2103" SrcFileId="4" StartOffset="2064"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S33" CovItemPrefix="Test.TestRange.java" Intrnl_Id="564">
+<LocList>
+<Loc EndOffset="2145" SrcFileId="4" StartOffset="2107"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S34" CovItemPrefix="Test.TestRange.java" Intrnl_Id="565">
+<LocList>
+<Loc EndOffset="2187" SrcFileId="4" StartOffset="2149"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S35" CovItemPrefix="Test.TestRange.java" Intrnl_Id="566">
+<LocList>
+<Loc EndOffset="2232" SrcFileId="4" StartOffset="2191"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="921" HierarchyLvlTypeId="9" Intrnl_Id="567" Name="testGetCentralValue_WithNegativeRange">
+<Header>
+<Loc EndOffset="2301" SrcFileId="4" StartOffset="2242"/>
+</Header>
+<LocList>
+<Loc EndOffset="2413" SrcFileId="4" StartOffset="2242"/>
+</LocList>
+<StmntSeq Intrnl_Id="568">
+<LocList>
+<Loc EndOffset="2343" SrcFileId="4" StartOffset="2309"/>
+<Loc EndOffset="2409" SrcFileId="4" StartOffset="2347"/>
+</LocList>
+<BasicStmnt CovItemId="S36" CovItemPrefix="Test.TestRange.java" Intrnl_Id="569">
+<LocList>
+<Loc EndOffset="2343" SrcFileId="4" StartOffset="2309"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S37" CovItemPrefix="Test.TestRange.java" Intrnl_Id="570">
+<LocList>
+<Loc EndOffset="2409" SrcFileId="4" StartOffset="2347"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="922" HierarchyLvlTypeId="9" Intrnl_Id="571" Name="testGetCentralValue_WithNegativeAndPositiveRange">
+<Header>
+<Loc EndOffset="2489" SrcFileId="4" StartOffset="2419"/>
+</Header>
+<LocList>
+<Loc EndOffset="2597" SrcFileId="4" StartOffset="2419"/>
+</LocList>
+<StmntSeq Intrnl_Id="572">
+<LocList>
+<Loc EndOffset="2529" SrcFileId="4" StartOffset="2497"/>
+<Loc EndOffset="2593" SrcFileId="4" StartOffset="2533"/>
+</LocList>
+<BasicStmnt CovItemId="S38" CovItemPrefix="Test.TestRange.java" Intrnl_Id="573">
+<LocList>
+<Loc EndOffset="2529" SrcFileId="4" StartOffset="2497"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S39" CovItemPrefix="Test.TestRange.java" Intrnl_Id="574">
+<LocList>
+<Loc EndOffset="2593" SrcFileId="4" StartOffset="2533"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="923" HierarchyLvlTypeId="9" Intrnl_Id="575" Name="testGetCentralValue_WithPositiveRange">
+<Header>
+<Loc EndOffset="2662" SrcFileId="4" StartOffset="2603"/>
+</Header>
+<LocList>
+<Loc EndOffset="2770" SrcFileId="4" StartOffset="2603"/>
+</LocList>
+<StmntSeq Intrnl_Id="576">
+<LocList>
+<Loc EndOffset="2701" SrcFileId="4" StartOffset="2670"/>
+<Loc EndOffset="2766" SrcFileId="4" StartOffset="2705"/>
+</LocList>
+<BasicStmnt CovItemId="S40" CovItemPrefix="Test.TestRange.java" Intrnl_Id="577">
+<LocList>
+<Loc EndOffset="2701" SrcFileId="4" StartOffset="2670"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S41" CovItemPrefix="Test.TestRange.java" Intrnl_Id="578">
+<LocList>
+<Loc EndOffset="2766" SrcFileId="4" StartOffset="2705"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="924" HierarchyLvlTypeId="9" Intrnl_Id="579" Name="testGetLength_WithNegativeRange">
+<Header>
+<Loc EndOffset="2829" SrcFileId="4" StartOffset="2776"/>
+</Header>
+<LocList>
+<Loc EndOffset="2932" SrcFileId="4" StartOffset="2776"/>
+</LocList>
+<StmntSeq Intrnl_Id="580">
+<LocList>
+<Loc EndOffset="2871" SrcFileId="4" StartOffset="2837"/>
+<Loc EndOffset="2928" SrcFileId="4" StartOffset="2875"/>
+</LocList>
+<BasicStmnt CovItemId="S42" CovItemPrefix="Test.TestRange.java" Intrnl_Id="581">
+<LocList>
+<Loc EndOffset="2871" SrcFileId="4" StartOffset="2837"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S43" CovItemPrefix="Test.TestRange.java" Intrnl_Id="582">
+<LocList>
+<Loc EndOffset="2928" SrcFileId="4" StartOffset="2875"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="925" HierarchyLvlTypeId="9" Intrnl_Id="583" Name="testGetLength_WithNegativeAndPositiveRange">
+<Header>
+<Loc EndOffset="3002" SrcFileId="4" StartOffset="2938"/>
+</Header>
+<LocList>
+<Loc EndOffset="3104" SrcFileId="4" StartOffset="2938"/>
+</LocList>
+<StmntSeq Intrnl_Id="584">
+<LocList>
+<Loc EndOffset="3042" SrcFileId="4" StartOffset="3010"/>
+<Loc EndOffset="3100" SrcFileId="4" StartOffset="3046"/>
+</LocList>
+<BasicStmnt CovItemId="S44" CovItemPrefix="Test.TestRange.java" Intrnl_Id="585">
+<LocList>
+<Loc EndOffset="3042" SrcFileId="4" StartOffset="3010"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S45" CovItemPrefix="Test.TestRange.java" Intrnl_Id="586">
+<LocList>
+<Loc EndOffset="3100" SrcFileId="4" StartOffset="3046"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="926" HierarchyLvlTypeId="9" Intrnl_Id="587" Name="testGetLength_WithPositiveRange">
+<Header>
+<Loc EndOffset="3163" SrcFileId="4" StartOffset="3110"/>
+</Header>
+<LocList>
+<Loc EndOffset="3263" SrcFileId="4" StartOffset="3110"/>
+</LocList>
+<StmntSeq Intrnl_Id="588">
+<LocList>
+<Loc EndOffset="3202" SrcFileId="4" StartOffset="3171"/>
+<Loc EndOffset="3259" SrcFileId="4" StartOffset="3206"/>
+</LocList>
+<BasicStmnt CovItemId="S46" CovItemPrefix="Test.TestRange.java" Intrnl_Id="589">
+<LocList>
+<Loc EndOffset="3202" SrcFileId="4" StartOffset="3171"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S47" CovItemPrefix="Test.TestRange.java" Intrnl_Id="590">
+<LocList>
+<Loc EndOffset="3259" SrcFileId="4" StartOffset="3206"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="937" HierarchyLvlTypeId="8" Intrnl_Id="591" Name="TestDataUtilities">
+<Header>
+<Loc EndOffset="182" SrcFileId="5" StartOffset="152"/>
+</Header>
+<LocList>
+<Loc EndOffset="3776" SrcFileId="5" StartOffset="152"/>
+</LocList>
+<HierarchyLvl HierarchyLvlId="928" HierarchyLvlTypeId="9" Intrnl_Id="592" Name="testCalculateColumnTotal_WithInvalidColumnKey">
+<Header>
+<Loc EndOffset="257" SrcFileId="5" StartOffset="190"/>
+</Header>
+<LocList>
+<Loc EndOffset="573" SrcFileId="5" StartOffset="190"/>
+</LocList>
+<StmntSeq Intrnl_Id="593">
+<LocList>
+<Loc EndOffset="324" SrcFileId="5" StartOffset="265"/>
+<Loc EndOffset="406" SrcFileId="5" StartOffset="328"/>
+<Loc EndOffset="487" SrcFileId="5" StartOffset="410"/>
+<Loc EndOffset="569" SrcFileId="5" StartOffset="491"/>
+</LocList>
+<BasicStmnt CovItemId="S1" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="594">
+<LocList>
+<Loc EndOffset="324" SrcFileId="5" StartOffset="265"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S2" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="595">
+<LocList>
+<Loc EndOffset="406" SrcFileId="5" StartOffset="328"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S3" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="596">
+<LocList>
+<Loc EndOffset="487" SrcFileId="5" StartOffset="410"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S4" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="597">
+<LocList>
+<Loc EndOffset="569" SrcFileId="5" StartOffset="491"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="929" HierarchyLvlTypeId="9" Intrnl_Id="598" Name="testCalculateColumnTotal_WithEmptyValues">
+<Header>
+<Loc EndOffset="641" SrcFileId="5" StartOffset="579"/>
+</Header>
+<LocList>
+<Loc EndOffset="793" SrcFileId="5" StartOffset="579"/>
+</LocList>
+<StmntSeq Intrnl_Id="599">
+<LocList>
+<Loc EndOffset="708" SrcFileId="5" StartOffset="649"/>
+<Loc EndOffset="789" SrcFileId="5" StartOffset="712"/>
+</LocList>
+<BasicStmnt CovItemId="S5" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="600">
+<LocList>
+<Loc EndOffset="708" SrcFileId="5" StartOffset="649"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S6" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="601">
+<LocList>
+<Loc EndOffset="789" SrcFileId="5" StartOffset="712"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="930" HierarchyLvlTypeId="9" Intrnl_Id="602" Name="testCalculateColumnTotal_WithIncremententalValues">
+<Header>
+<Loc EndOffset="870" SrcFileId="5" StartOffset="799"/>
+</Header>
+<LocList>
+<Loc EndOffset="1141" SrcFileId="5" StartOffset="799"/>
+</LocList>
+<StmntSeq Intrnl_Id="603">
+<LocList>
+<Loc EndOffset="937" SrcFileId="5" StartOffset="878"/>
+<Loc EndOffset="1012" SrcFileId="5" StartOffset="941"/>
+<Loc EndOffset="1137" SrcFileId="5" StartOffset="1016"/>
+</LocList>
+<BasicStmnt CovItemId="S7" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="604">
+<LocList>
+<Loc EndOffset="937" SrcFileId="5" StartOffset="878"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S8" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="605" MltplExecId="L1-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L1-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L1-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="606">
+<LocList>
+<Loc EndOffset="1007" SrcFileId="5" StartOffset="980"/>
+</LocList>
+<BasicStmnt CovItemId="S9" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="607">
+<LocList>
+<Loc EndOffset="1007" SrcFileId="5" StartOffset="980"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="944" SrcFileId="5" StartOffset="941"/>
+<LocList>
+<Loc EndOffset="1012" SrcFileId="5" StartOffset="941"/>
+</LocList>
+</LoopStmnt>
+<LoopStmnt CovItemId="S10" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="608" MltplExecId="L2-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L2-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L2-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="609">
+<LocList>
+<Loc EndOffset="1132" SrcFileId="5" StartOffset="1055"/>
+</LocList>
+<BasicStmnt CovItemId="S11" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="610">
+<LocList>
+<Loc EndOffset="1132" SrcFileId="5" StartOffset="1055"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="1019" SrcFileId="5" StartOffset="1016"/>
+<LocList>
+<Loc EndOffset="1137" SrcFileId="5" StartOffset="1016"/>
+</LocList>
+</LoopStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="931" HierarchyLvlTypeId="9" Intrnl_Id="611" Name="testCalculateRowTotal_WithInvalidRowKey">
+<Header>
+<Loc EndOffset="1208" SrcFileId="5" StartOffset="1147"/>
+</Header>
+<LocList>
+<Loc EndOffset="1515" SrcFileId="5" StartOffset="1147"/>
+</LocList>
+<StmntSeq Intrnl_Id="612">
+<LocList>
+<Loc EndOffset="1275" SrcFileId="5" StartOffset="1216"/>
+<Loc EndOffset="1354" SrcFileId="5" StartOffset="1279"/>
+<Loc EndOffset="1432" SrcFileId="5" StartOffset="1358"/>
+<Loc EndOffset="1511" SrcFileId="5" StartOffset="1436"/>
+</LocList>
+<BasicStmnt CovItemId="S12" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="613">
+<LocList>
+<Loc EndOffset="1275" SrcFileId="5" StartOffset="1216"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S13" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="614">
+<LocList>
+<Loc EndOffset="1354" SrcFileId="5" StartOffset="1279"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S14" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="615">
+<LocList>
+<Loc EndOffset="1432" SrcFileId="5" StartOffset="1358"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S15" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="616">
+<LocList>
+<Loc EndOffset="1511" SrcFileId="5" StartOffset="1436"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="932" HierarchyLvlTypeId="9" Intrnl_Id="617" Name="testCalculateRowTotal_WithEmptyValues">
+<Header>
+<Loc EndOffset="1580" SrcFileId="5" StartOffset="1521"/>
+</Header>
+<LocList>
+<Loc EndOffset="1729" SrcFileId="5" StartOffset="1521"/>
+</LocList>
+<StmntSeq Intrnl_Id="618">
+<LocList>
+<Loc EndOffset="1647" SrcFileId="5" StartOffset="1588"/>
+<Loc EndOffset="1725" SrcFileId="5" StartOffset="1651"/>
+</LocList>
+<BasicStmnt CovItemId="S16" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="619">
+<LocList>
+<Loc EndOffset="1647" SrcFileId="5" StartOffset="1588"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S17" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="620">
+<LocList>
+<Loc EndOffset="1725" SrcFileId="5" StartOffset="1651"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="933" HierarchyLvlTypeId="9" Intrnl_Id="621" Name="testCalculateRowTotal_WithIncremententalValues">
+<Header>
+<Loc EndOffset="1803" SrcFileId="5" StartOffset="1735"/>
+</Header>
+<LocList>
+<Loc EndOffset="2071" SrcFileId="5" StartOffset="1735"/>
+</LocList>
+<StmntSeq Intrnl_Id="622">
+<LocList>
+<Loc EndOffset="1870" SrcFileId="5" StartOffset="1811"/>
+<Loc EndOffset="1945" SrcFileId="5" StartOffset="1874"/>
+<Loc EndOffset="2067" SrcFileId="5" StartOffset="1949"/>
+</LocList>
+<BasicStmnt CovItemId="S18" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="623">
+<LocList>
+<Loc EndOffset="1870" SrcFileId="5" StartOffset="1811"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S19" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="624" MltplExecId="L3-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L3-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L3-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="625">
+<LocList>
+<Loc EndOffset="1940" SrcFileId="5" StartOffset="1913"/>
+</LocList>
+<BasicStmnt CovItemId="S20" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="626">
+<LocList>
+<Loc EndOffset="1940" SrcFileId="5" StartOffset="1913"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="1877" SrcFileId="5" StartOffset="1874"/>
+<LocList>
+<Loc EndOffset="1945" SrcFileId="5" StartOffset="1874"/>
+</LocList>
+</LoopStmnt>
+<LoopStmnt CovItemId="S21" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="627" MltplExecId="L4-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L4-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L4-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="628">
+<LocList>
+<Loc EndOffset="2062" SrcFileId="5" StartOffset="1988"/>
+</LocList>
+<BasicStmnt CovItemId="S22" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="629">
+<LocList>
+<Loc EndOffset="2062" SrcFileId="5" StartOffset="1988"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="1952" SrcFileId="5" StartOffset="1949"/>
+<LocList>
+<Loc EndOffset="2067" SrcFileId="5" StartOffset="1949"/>
+</LocList>
+</LoopStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="934" HierarchyLvlTypeId="9" Intrnl_Id="630" Name="testClone">
+<Header>
+<Loc EndOffset="2108" SrcFileId="5" StartOffset="2077"/>
+</Header>
+<LocList>
+<Loc EndOffset="2738" SrcFileId="5" StartOffset="2077"/>
+</LocList>
+<StmntSeq Intrnl_Id="631">
+<LocList>
+<Loc EndOffset="2152" SrcFileId="5" StartOffset="2116"/>
+<Loc EndOffset="2182" SrcFileId="5" StartOffset="2156"/>
+<Loc EndOffset="2212" SrcFileId="5" StartOffset="2186"/>
+<Loc EndOffset="2395" SrcFileId="5" StartOffset="2216"/>
+<Loc EndOffset="2448" SrcFileId="5" StartOffset="2400"/>
+<Loc EndOffset="2502" SrcFileId="5" StartOffset="2452"/>
+<Loc EndOffset="2562" SrcFileId="5" StartOffset="2506"/>
+<Loc EndOffset="2622" SrcFileId="5" StartOffset="2566"/>
+<Loc EndOffset="2678" SrcFileId="5" StartOffset="2626"/>
+<Loc EndOffset="2734" SrcFileId="5" StartOffset="2682"/>
+</LocList>
+<BasicStmnt CovItemId="S23" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="632">
+<LocList>
+<Loc EndOffset="2152" SrcFileId="5" StartOffset="2116"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S24" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="633">
+<LocList>
+<Loc EndOffset="2182" SrcFileId="5" StartOffset="2156"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S25" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="634">
+<LocList>
+<Loc EndOffset="2212" SrcFileId="5" StartOffset="2186"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S26" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="635" MltplExecId="L5-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L5-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L5-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="636">
+<LocList>
+<Loc EndOffset="2384" SrcFileId="5" StartOffset="2275"/>
+</LocList>
+<LoopStmnt CovItemId="S27" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="637" MltplExecId="L6-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L6-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L6-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="638">
+<LocList>
+<Loc EndOffset="2368" SrcFileId="5" StartOffset="2347"/>
+</LocList>
+<BasicStmnt CovItemId="S28" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="639">
+<LocList>
+<Loc EndOffset="2368" SrcFileId="5" StartOffset="2347"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="2278" SrcFileId="5" StartOffset="2275"/>
+<LocList>
+<Loc EndOffset="2384" SrcFileId="5" StartOffset="2275"/>
+</LocList>
+</LoopStmnt>
+</StmntSeq>
+<Keyword EndOffset="2219" SrcFileId="5" StartOffset="2216"/>
+<LocList>
+<Loc EndOffset="2395" SrcFileId="5" StartOffset="2216"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S29" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="640">
+<LocList>
+<Loc EndOffset="2448" SrcFileId="5" StartOffset="2400"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S30" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="641">
+<LocList>
+<Loc EndOffset="2502" SrcFileId="5" StartOffset="2452"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S31" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="642">
+<LocList>
+<Loc EndOffset="2562" SrcFileId="5" StartOffset="2506"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S32" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="643">
+<LocList>
+<Loc EndOffset="2622" SrcFileId="5" StartOffset="2566"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S33" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="644">
+<LocList>
+<Loc EndOffset="2678" SrcFileId="5" StartOffset="2626"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S34" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="645">
+<LocList>
+<Loc EndOffset="2734" SrcFileId="5" StartOffset="2682"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="935" HierarchyLvlTypeId="9" Intrnl_Id="646" Name="testCreateNumberArray">
+<Header>
+<Loc EndOffset="2787" SrcFileId="5" StartOffset="2744"/>
+</Header>
+<LocList>
+<Loc EndOffset="3138" SrcFileId="5" StartOffset="2744"/>
+</LocList>
+<StmntSeq Intrnl_Id="647">
+<LocList>
+<Loc EndOffset="2827" SrcFileId="5" StartOffset="2795"/>
+<Loc EndOffset="2899" SrcFileId="5" StartOffset="2831"/>
+<Loc EndOffset="2963" SrcFileId="5" StartOffset="2903"/>
+<Loc EndOffset="3019" SrcFileId="5" StartOffset="2967"/>
+<Loc EndOffset="3134" SrcFileId="5" StartOffset="3023"/>
+</LocList>
+<BasicStmnt CovItemId="S35" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="648">
+<LocList>
+<Loc EndOffset="2827" SrcFileId="5" StartOffset="2795"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S36" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="649" MltplExecId="L7-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L7-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L7-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="650">
+<LocList>
+<Loc EndOffset="2894" SrcFileId="5" StartOffset="2880"/>
+</LocList>
+<BasicStmnt CovItemId="S37" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="651">
+<LocList>
+<Loc EndOffset="2894" SrcFileId="5" StartOffset="2880"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="2834" SrcFileId="5" StartOffset="2831"/>
+<LocList>
+<Loc EndOffset="2899" SrcFileId="5" StartOffset="2831"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S38" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="652">
+<LocList>
+<Loc EndOffset="2963" SrcFileId="5" StartOffset="2903"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S39" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="653">
+<LocList>
+<Loc EndOffset="3019" SrcFileId="5" StartOffset="2967"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S40" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="654" MltplExecId="L8-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L8-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L8-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="655">
+<LocList>
+<Loc EndOffset="3129" SrcFileId="5" StartOffset="3074"/>
+</LocList>
+<BasicStmnt CovItemId="S41" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="656">
+<LocList>
+<Loc EndOffset="3129" SrcFileId="5" StartOffset="3074"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="3026" SrcFileId="5" StartOffset="3023"/>
+<LocList>
+<Loc EndOffset="3134" SrcFileId="5" StartOffset="3023"/>
+</LocList>
+</LoopStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="936" HierarchyLvlTypeId="9" Intrnl_Id="657" Name="testEqual">
+<Header>
+<Loc EndOffset="3175" SrcFileId="5" StartOffset="3144"/>
+</Header>
+<LocList>
+<Loc EndOffset="3773" SrcFileId="5" StartOffset="3144"/>
+</LocList>
+<StmntSeq Intrnl_Id="658">
+<LocList>
+<Loc EndOffset="3219" SrcFileId="5" StartOffset="3183"/>
+<Loc EndOffset="3263" SrcFileId="5" StartOffset="3223"/>
+<Loc EndOffset="3293" SrcFileId="5" StartOffset="3267"/>
+<Loc EndOffset="3323" SrcFileId="5" StartOffset="3297"/>
+<Loc EndOffset="3357" SrcFileId="5" StartOffset="3327"/>
+<Loc EndOffset="3391" SrcFileId="5" StartOffset="3361"/>
+<Loc EndOffset="3615" SrcFileId="5" StartOffset="3395"/>
+<Loc EndOffset="3679" SrcFileId="5" StartOffset="3620"/>
+<Loc EndOffset="3705" SrcFileId="5" StartOffset="3683"/>
+<Loc EndOffset="3769" SrcFileId="5" StartOffset="3709"/>
+</LocList>
+<BasicStmnt CovItemId="S42" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="659">
+<LocList>
+<Loc EndOffset="3219" SrcFileId="5" StartOffset="3183"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S43" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="660">
+<LocList>
+<Loc EndOffset="3263" SrcFileId="5" StartOffset="3223"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S44" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="661">
+<LocList>
+<Loc EndOffset="3293" SrcFileId="5" StartOffset="3267"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S45" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="662">
+<LocList>
+<Loc EndOffset="3323" SrcFileId="5" StartOffset="3297"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S46" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="663">
+<LocList>
+<Loc EndOffset="3357" SrcFileId="5" StartOffset="3327"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S47" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="664">
+<LocList>
+<Loc EndOffset="3391" SrcFileId="5" StartOffset="3361"/>
+</LocList>
+</BasicStmnt>
+<LoopStmnt CovItemId="S48" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="665" MltplExecId="L9-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L9-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L9-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="666">
+<LocList>
+<Loc EndOffset="3604" SrcFileId="5" StartOffset="3454"/>
+</LocList>
+<LoopStmnt CovItemId="S49" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="667" MltplExecId="L10-2" MltplExecPrefix="Test.TestDataUtilities.java" NvrExecId="L10-0" NvrExecPrefix="Test.TestDataUtilities.java" OnceExecutedId="L10-1" OnceExecutedPrefix="Test.TestDataUtilities.java" OptBodyExec="true">
+<StmntSeq Intrnl_Id="668">
+<LocList>
+<Loc EndOffset="3547" SrcFileId="5" StartOffset="3526"/>
+<Loc EndOffset="3588" SrcFileId="5" StartOffset="3563"/>
+</LocList>
+<BasicStmnt CovItemId="S50" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="669">
+<LocList>
+<Loc EndOffset="3547" SrcFileId="5" StartOffset="3526"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S51" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="670">
+<LocList>
+<Loc EndOffset="3588" SrcFileId="5" StartOffset="3563"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+<Keyword EndOffset="3457" SrcFileId="5" StartOffset="3454"/>
+<LocList>
+<Loc EndOffset="3604" SrcFileId="5" StartOffset="3454"/>
+</LocList>
+</LoopStmnt>
+</StmntSeq>
+<Keyword EndOffset="3398" SrcFileId="5" StartOffset="3395"/>
+<LocList>
+<Loc EndOffset="3615" SrcFileId="5" StartOffset="3395"/>
+</LocList>
+</LoopStmnt>
+<BasicStmnt CovItemId="S52" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="671">
+<LocList>
+<Loc EndOffset="3679" SrcFileId="5" StartOffset="3620"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S53" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="672">
+<LocList>
+<Loc EndOffset="3705" SrcFileId="5" StartOffset="3683"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S54" CovItemPrefix="Test.TestDataUtilities.java" Intrnl_Id="673">
+<LocList>
+<Loc EndOffset="3769" SrcFileId="5" StartOffset="3709"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="940" HierarchyLvlTypeId="8" Intrnl_Id="674" Name="TestCSV">
+<Header>
+<Loc EndOffset="231" SrcFileId="6" StartOffset="211"/>
+</Header>
+<LocList>
+<Loc EndOffset="1537" SrcFileId="6" StartOffset="211"/>
+</LocList>
+<HierarchyLvl HierarchyLvlId="938" HierarchyLvlTypeId="9" Intrnl_Id="675" Name="testReadCategoryDataset">
+<Header>
+<Loc EndOffset="302" SrcFileId="6" StartOffset="238"/>
+</Header>
+<LocList>
+<Loc EndOffset="874" SrcFileId="6" StartOffset="238"/>
+</LocList>
+<StmntSeq Intrnl_Id="676">
+<LocList>
+<Loc EndOffset="330" SrcFileId="6" StartOffset="310"/>
+<Loc EndOffset="419" SrcFileId="6" StartOffset="334"/>
+<Loc EndOffset="495" SrcFileId="6" StartOffset="423"/>
+<Loc EndOffset="562" SrcFileId="6" StartOffset="499"/>
+<Loc EndOffset="626" SrcFileId="6" StartOffset="566"/>
+<Loc EndOffset="687" SrcFileId="6" StartOffset="630"/>
+<Loc EndOffset="748" SrcFileId="6" StartOffset="691"/>
+<Loc EndOffset="809" SrcFileId="6" StartOffset="752"/>
+<Loc EndOffset="870" SrcFileId="6" StartOffset="813"/>
+</LocList>
+<BasicStmnt CovItemId="S1" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="677">
+<LocList>
+<Loc EndOffset="330" SrcFileId="6" StartOffset="310"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S2" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="678">
+<LocList>
+<Loc EndOffset="419" SrcFileId="6" StartOffset="334"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S3" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="679">
+<LocList>
+<Loc EndOffset="495" SrcFileId="6" StartOffset="423"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S4" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="680">
+<LocList>
+<Loc EndOffset="562" SrcFileId="6" StartOffset="499"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S5" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="681">
+<LocList>
+<Loc EndOffset="626" SrcFileId="6" StartOffset="566"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S6" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="682">
+<LocList>
+<Loc EndOffset="687" SrcFileId="6" StartOffset="630"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S7" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="683">
+<LocList>
+<Loc EndOffset="748" SrcFileId="6" StartOffset="691"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S8" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="684">
+<LocList>
+<Loc EndOffset="809" SrcFileId="6" StartOffset="752"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S9" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="685">
+<LocList>
+<Loc EndOffset="870" SrcFileId="6" StartOffset="813"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+<HierarchyLvl HierarchyLvlId="939" HierarchyLvlTypeId="9" Intrnl_Id="686" Name="testReadCategoryDataset_WithTextDelimiter">
+<Header>
+<Loc EndOffset="962" SrcFileId="6" StartOffset="880"/>
+</Header>
+<LocList>
+<Loc EndOffset="1534" SrcFileId="6" StartOffset="880"/>
+</LocList>
+<StmntSeq Intrnl_Id="687">
+<LocList>
+<Loc EndOffset="990" SrcFileId="6" StartOffset="970"/>
+<Loc EndOffset="1079" SrcFileId="6" StartOffset="994"/>
+<Loc EndOffset="1155" SrcFileId="6" StartOffset="1083"/>
+<Loc EndOffset="1222" SrcFileId="6" StartOffset="1159"/>
+<Loc EndOffset="1286" SrcFileId="6" StartOffset="1226"/>
+<Loc EndOffset="1347" SrcFileId="6" StartOffset="1290"/>
+<Loc EndOffset="1408" SrcFileId="6" StartOffset="1351"/>
+<Loc EndOffset="1469" SrcFileId="6" StartOffset="1412"/>
+<Loc EndOffset="1530" SrcFileId="6" StartOffset="1473"/>
+</LocList>
+<BasicStmnt CovItemId="S10" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="688">
+<LocList>
+<Loc EndOffset="990" SrcFileId="6" StartOffset="970"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S11" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="689">
+<LocList>
+<Loc EndOffset="1079" SrcFileId="6" StartOffset="994"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S12" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="690">
+<LocList>
+<Loc EndOffset="1155" SrcFileId="6" StartOffset="1083"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S13" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="691">
+<LocList>
+<Loc EndOffset="1222" SrcFileId="6" StartOffset="1159"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S14" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="692">
+<LocList>
+<Loc EndOffset="1286" SrcFileId="6" StartOffset="1226"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S15" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="693">
+<LocList>
+<Loc EndOffset="1347" SrcFileId="6" StartOffset="1290"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S16" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="694">
+<LocList>
+<Loc EndOffset="1408" SrcFileId="6" StartOffset="1351"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S17" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="695">
+<LocList>
+<Loc EndOffset="1469" SrcFileId="6" StartOffset="1412"/>
+</LocList>
+</BasicStmnt>
+<BasicStmnt CovItemId="S18" CovItemPrefix="Test.TestCSV.java" Intrnl_Id="696">
+<LocList>
+<Loc EndOffset="1530" SrcFileId="6" StartOffset="1473"/>
+</LocList>
+</BasicStmnt>
+</StmntSeq>
+</HierarchyLvl>
+</HierarchyLvl>
+</HierarchyLvl>
+</HierarchyLvl>
+</MASTRoot>
+</TestSessionContainer>
