@@ -74,6 +74,8 @@ public class TestRange {
 		Assert.assertEquals(0, aRange.constrain(0), 0.000001);
 		Assert.assertEquals(0.1, aRange.constrain(0.1), 0.000001);
 		Assert.assertEquals(-0.1, aRange.constrain(-0.1), 0.000001);
+		Assert.assertEquals(1, aRange.constrain(1.1), 0.000001);
+		Assert.assertEquals(-1, aRange.constrain(-1.1), 0.000001);
 		Assert.assertEquals(1, aRange.constrain(99), 0.000001);
 		Assert.assertEquals(-1, aRange.constrain(-99), 0.000001);
 	}

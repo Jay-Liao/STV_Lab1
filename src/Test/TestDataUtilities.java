@@ -63,6 +63,31 @@ public class TestDataUtilities {
 	}
 	
 	@Test
+	public void testCalculateRowTotal_WithValidCols()
+	{
+		DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();
+		// row 1
+		values2d.addValue(1, 0, 0);
+		values2d.addValue(2, 0, 1);
+		values2d.addValue(3, 0, 2);
+		// row 2
+		values2d.addValue(4, 1, 0);
+		values2d.addValue(5, 1, 1);
+		values2d.addValue(6, 1, 2);
+		// row 3
+		values2d.addValue(7, 2, 0);
+		values2d.addValue(8, 2, 1);
+		values2d.addValue(null, 2, 2);
+		
+		int[] validCols1 = {3};
+		int[] validCols2 = {0, 1};
+		int[] validCols3 = {0, 1, 2};
+		Assert.assertEquals(0, DataUtilities.calculateRowTotal(values2d, 0, validCols1), 0.1);
+		Assert.assertEquals(9, DataUtilities.calculateRowTotal(values2d, 1, validCols2), 0.1);
+		Assert.assertEquals(15, DataUtilities.calculateRowTotal(values2d, 2, validCols3), 0.1);
+	}
+	
+	@Test
 	public void testCalculateRowTotal_WithInvalidRowKey()
 	{
 		DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();
@@ -105,9 +130,9 @@ public class TestDataUtilities {
             	target[i][j] = j + 1; 
             }
         } 
+		target[0] = null;
 		double[][] result = DataUtilities.clone(target);
 		Assert.assertEquals(target.length, result.length);
-		Assert.assertEquals(target[0].length, result[0].length);
 		Assert.assertEquals(target[1].length, result[1].length);
 		Assert.assertArrayEquals(target[0], result[0], 0.1);
 		Assert.assertArrayEquals(target[1], result[1], 0.1);
@@ -130,14 +155,40 @@ public class TestDataUtilities {
 	}
 	
 	@Test
+	public void testCreateNumberArray2D()
+	{
+		double[][] target = new double[2][];
+		target[0] = new double[3];
+		target[1] = new double[5];
+		for(int i = 0; i < target.length; i++) 
+		{ 
+            for(int j = 0; j < target[i].length; j++) 
+            {
+            	target[i][j] = j + 1;
+            }
+        } 
+		Number[][] aNumbers2D = DataUtilities.createNumberArray2D(target);
+		Assert.assertEquals(target.length, aNumbers2D.length);
+		for (int i = 0; i < aNumbers2D.length; i++)
+		{
+			for (int j = 0; j < aNumbers2D[i].length; j++) 
+			{
+				Assert.assertEquals(target[i][j], aNumbers2D[i][j]);
+			}
+		}
+	}
+	
+	@Test
 	public void testEqual()
 	{
 		double[][] target = new double[2][];
 		double[][] comparator = new double[2][];
+		double[][] comparator2 = new double[1][];
 		target[0] = new double[3];
 		target[1] = new double[5];
 		comparator[0] = new double[3];
 		comparator[1] = new double[5];
+		comparator2[0] = new double [2];
 		for(int i = 0; i < target.length; i++) 
 		{ 
             for(int j = 0; j < target[i].length; j++) 
@@ -149,5 +200,9 @@ public class TestDataUtilities {
 		Assert.assertTrue(DataUtilities.equal(target, comparator));
 		comparator[0][0] = 99;
 		Assert.assertFalse(DataUtilities.equal(target, comparator));
+		Assert.assertTrue(DataUtilities.equal(null, null));
+		Assert.assertFalse(DataUtilities.equal(target, null));
+		Assert.assertFalse(DataUtilities.equal(null, comparator));
+		Assert.assertFalse(DataUtilities.equal(target, comparator2));
 	}
 }
