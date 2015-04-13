@@ -38,6 +38,31 @@ public class TestDataUtilities {
 	}
 	
 	@Test
+	public void testCalculateColumnTotal_WithValidRows()
+	{
+		DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();
+		// row 1
+		values2d.addValue(1, 0, 0);
+		values2d.addValue(2, 0, 1);
+		values2d.addValue(3, 0, 2);
+		// row 2
+		values2d.addValue(4, 1, 0);
+		values2d.addValue(5, 1, 1);
+		values2d.addValue(6, 1, 2);
+		// row 3
+		values2d.addValue(7, 2, 0);
+		values2d.addValue(8, 2, 1);
+		values2d.addValue(null, 2, 2);
+		
+		int[] validRows1 = {3};
+		int[] validRows2 = {0, 1};
+		int[] validRows3 = {0, 1, 2};
+		Assert.assertEquals(0, DataUtilities.calculateColumnTotal(values2d, 0, validRows1), 0.1);
+		Assert.assertEquals(7, DataUtilities.calculateColumnTotal(values2d, 1, validRows2), 0.1);
+		Assert.assertEquals(9, DataUtilities.calculateColumnTotal(values2d, 2, validRows3), 0.1);
+	}
+	
+	@Test
 	public void testCalculateRowTotal_WithInvalidRowKey()
 	{
 		DefaultKeyedValues2D values2d = new DefaultKeyedValues2D();
