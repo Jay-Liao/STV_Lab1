@@ -42,6 +42,30 @@ public class TestRange {
 	}
 	
 	@Test
+	public void testCombine_WithFirstEmptyRange()
+	{
+		Range aRange1 = null;
+		Range aRange2 = new Range(0, 9);
+		Range result = Range.combine(aRange1, aRange2);
+		Assert.assertEquals(aRange2.getLength(), result.getLength(), 0.000001);
+		Assert.assertEquals(aRange2.getLowerBound(), result.getLowerBound(), 0.000001);
+		Assert.assertEquals(aRange2.getUpperBound(), result.getUpperBound(), 0.000001);
+		Assert.assertEquals(aRange2.getCentralValue(), result.getCentralValue(), 0.000001);
+	}
+	
+	@Test
+	public void testCombine_WithSecondEmptyRange()
+	{
+		Range aRange1 = new Range(-1, 0);
+		Range aRange2 = null;
+		Range result = Range.combine(aRange1, aRange2);
+		Assert.assertEquals(aRange1.getLength(), result.getLength(), 0.000001);
+		Assert.assertEquals(aRange1.getLowerBound(), result.getLowerBound(), 0.000001);
+		Assert.assertEquals(aRange1.getUpperBound(), result.getUpperBound(), 0.000001);
+		Assert.assertEquals(aRange1.getCentralValue(), result.getCentralValue(), 0.000001);
+	}
+	
+	@Test
 	public void testConstrain()
 	{
 		Range aRange = new Range(-1, 1);
